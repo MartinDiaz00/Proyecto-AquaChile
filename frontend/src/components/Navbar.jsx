@@ -5,13 +5,14 @@ import { useAuth } from "../context/AuthContext";
 function Navbar() {
   const [abierto, setAbierto] = useState(false);
   const { usuario, cerrarSesion } = useAuth();
+  const { permisos } = useAuth();
 
-  const enlaces = [
-    { to: "/", label: "Dashboard", icon: "bi-speedometer2", exacto: true },
-    { to: "/candidatos", label: "Candidatos", icon: "bi-people-fill", exacto: false },
-    { to: "/solicitudes", label: "Solicitudes", icon: "bi-clipboard-check-fill", exacto: false },
+  const todosLosEnlaces = [
+    { to: "/", label: "Dashboard", icon: "bi-speedometer2", exacto: true, siempre: true },
+    { to: "/candidatos", label: "Candidatos", icon: "bi-people-fill", exacto: false, siempre: permisos.candidatos },
+    { to: "/solicitudes", label: "Solicitudes", icon: "bi-clipboard-check-fill", exacto: false, siempre: permisos.solicitudes || permisos.avanzar || permisos.evaluar },
   ];
-
+  const enlaces = todosLosEnlaces.filter((link) => link.siempre);
   return (
     <nav
       className="px-4 py-3 sticky-top shadow"
