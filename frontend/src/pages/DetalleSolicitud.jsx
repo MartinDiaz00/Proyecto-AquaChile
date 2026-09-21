@@ -121,6 +121,30 @@ function DetalleSolicitud() {
 
                 <dt className="col-5 text-muted">Responsable</dt>
                 <dd className="col-7">{solicitud.responsable}</dd>
+
+                <dt className="col-5 text-muted">Origen candidato</dt>
+                <dd className="col-7">{solicitud.origenCandidato || "—"}</dd>
+
+                <dt className="col-5 text-muted">Unidad</dt>
+                <dd className="col-7">{solicitud.unidad || "—"}</dd>
+
+                <dt className="col-5 text-muted">CECO</dt>
+                <dd className="col-7">{solicitud.ceco || "—"}</dd>
+
+                <dt className="col-5 text-muted">Requiere referencias</dt>
+                <dd className="col-7">{solicitud.requiereReferencias ? "Sí" : "No"}</dd>
+
+                <dt className="col-5 text-muted">CV adjunto</dt>
+                <dd className="col-7">{solicitud.cvAdjunto ? "Sí" : "No"}</dd>
+
+                <dt className="col-5 text-muted">Descriptor adjunto</dt>
+                <dd className="col-7">{solicitud.descriptorAdjunto ? "Sí" : "No"}</dd>
+
+                <dt className="col-5 text-muted">Candidato referido</dt>
+                <dd className="col-7">{solicitud.esReferido ? "Sí" : "No"}</dd>
+
+                <dt className="col-5 text-muted">Aspectos a indagar</dt>
+                <dd className="col-7">{solicitud.aspectosIndagar || "—"}</dd>
               </dl>
             </div>
           </div>

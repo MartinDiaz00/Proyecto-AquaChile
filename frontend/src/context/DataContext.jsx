@@ -27,6 +27,14 @@ const solicitudDesdeApi = (s) => ({
   estado: s.estado,
   responsable: s.responsable,
   observaciones: s.observaciones,
+  origenCandidato: s.origen_candidato,
+  unidad: s.unidad,
+  requiereReferencias: s.requiere_referencias,
+  ceco: s.ceco,
+  cvAdjunto: s.cv_adjunto,
+  descriptorAdjunto: s.descriptor_adjunto,
+  aspectosIndagar: s.aspectos_indagar,
+  esReferido: s.es_referido,
 });
 
 const evaluacionDesdeApi = (e) => ({
@@ -110,6 +118,14 @@ export function DataProvider({ children }) {
         familia_cargo: form.familiaCargo,
         fecha_solicitud: form.fechaSolicitud,
         responsable: form.responsable,
+        origen_candidato: form.origenCandidato,
+        unidad: form.unidad,
+        requiere_referencias: form.requiereReferencias,
+        ceco: form.ceco,
+        cv_adjunto: form.cvAdjunto,
+        descriptor_adjunto: form.descriptorAdjunto,
+        aspectos_indagar: form.aspectosIndagar,
+        es_referido: form.esReferido,
       }),
     });
     if (!resultado.ok) throw new Error("No se pudo guardar la solicitud");

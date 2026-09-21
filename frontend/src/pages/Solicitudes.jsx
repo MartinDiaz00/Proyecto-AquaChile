@@ -8,16 +8,24 @@ function Solicitudes() {
   const { permisos } = useAuth();
   const [mostrarForm, setMostrarForm] = useState(false);
 
-  const [form, setForm] = useState({
+  const formVacio = {
     candidatoId: "",
     cargo: "",
     familiaCargo: "",
     fechaSolicitud: "",
     responsable: "",
-  });
+    origenCandidato: "",
+    unidad: "",
+    requiereReferencias: false,
+    ceco: "",
+    cvAdjunto: false,
+    descriptorAdjunto: false,
+    aspectosIndagar: "",
+    esReferido: false,
+  };
+  const [form, setForm] = useState(formVacio);
   const [errores, setErrores] = useState({});
 
-  // --- Filtros ---
   const [filtroEstado, setFiltroEstado] = useState("Todos");
   const [filtroCargo, setFiltroCargo] = useState("");
   const [filtroCandidato, setFiltroCandidato] = useState("");
@@ -31,7 +39,8 @@ function Solicitudes() {
   };
 
   const manejarCambio = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, type, value, checked } = e.target;
+    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   };
 
   const validar = () => {
@@ -41,6 +50,7 @@ function Solicitudes() {
     if (!form.familiaCargo.trim()) nuevosErrores.familiaCargo = "La familia de cargo es obligatoria";
     if (!form.fechaSolicitud) nuevosErrores.fechaSolicitud = "La fecha es obligatoria";
     if (!form.responsable.trim()) nuevosErrores.responsable = "El responsable es obligatorio";
+    if (!form.origenCandidato) nuevosErrores.origenCandidato = "Indica si es externo o interno";
     return nuevosErrores;
   };
 
@@ -53,7 +63,7 @@ function Solicitudes() {
     }
     try {
       await agregarSolicitud({ ...form, candidatoId: Number(form.candidatoId) });
-      setForm({ candidatoId: "", cargo: "", familiaCargo: "", fechaSolicitud: "", responsable: "" });
+      setForm(formVacio);
       setErrores({});
       setMostrarForm(false);
     } catch (error) {
@@ -68,7 +78,6 @@ function Solicitudes() {
     setFiltroFecha("");
   };
 
-  // Aplica los 4 filtros en cadena, uno tras otro
   const solicitudesFiltradas = solicitudes
     .filter((s) => filtroEstado === "Todos" || s.estado === filtroEstado)
     .filter((s) => s.cargo.toLowerCase().includes(filtroCargo.toLowerCase()))
@@ -90,6 +99,7 @@ function Solicitudes() {
 
       {mostrarForm && (
         <form className="card card-body mb-4 border-0 shadow-sm" onSubmit={manejarEnvio} noValidate>
+          <h6 className="text-muted mb-3">Datos de la solicitud</h6>
           <div className="row g-3">
             <div className="col-md-6">
               <label className="form-label">Candidato</label>
@@ -105,6 +115,21 @@ function Solicitudes() {
                 ))}
               </select>
               {errores.candidatoId && <div className="invalid-feedback">{errores.candidatoId}</div>}
+            </div>
+
+            <div className="col-md-6">
+              <label className="form-label">Origen del candidato</label>
+              <select
+                name="origenCandidato"
+                className={`form-select ${errores.origenCandidato ? "is-invalid" : ""}`}
+                value={form.origenCandidato}
+                onChange={manejarCambio}
+              >
+                <option value="">Selecciona una opción</option>
+                <option value="Externo">Externo</option>
+                <option value="Interno">Interno</option>
+              </select>
+              {errores.origenCandidato && <div className="invalid-feedback">{errores.origenCandidato}</div>}
             </div>
 
             <div className="col-md-6">
@@ -131,7 +156,30 @@ function Solicitudes() {
               {errores.familiaCargo && <div className="invalid-feedback">{errores.familiaCargo}</div>}
             </div>
 
-            <div className="col-md-3">
+            <div className="col-md-4">
+              <label className="form-label">Unidad</label>
+              <input
+                type="text"
+                name="unidad"
+                className="form-control"
+                placeholder="Ej: Planta Magallanes"
+                value={form.unidad}
+                onChange={manejarCambio}
+              />
+            </div>
+
+            <div className="col-md-4">
+              <label className="form-label">Centro de costos (CECO)</label>
+              <input
+                type="text"
+                name="ceco"
+                className="form-control"
+                value={form.ceco}
+                onChange={manejarCambio}
+              />
+            </div>
+
+            <div className="col-md-4">
               <label className="form-label">Fecha de solicitud</label>
               <input
                 type="date"
@@ -143,7 +191,7 @@ function Solicitudes() {
               {errores.fechaSolicitud && <div className="invalid-feedback">{errores.fechaSolicitud}</div>}
             </div>
 
-            <div className="col-md-3">
+            <div className="col-md-6">
               <label className="form-label">Responsable</label>
               <input
                 type="text"
@@ -154,13 +202,71 @@ function Solicitudes() {
               />
               {errores.responsable && <div className="invalid-feedback">{errores.responsable}</div>}
             </div>
+
+            <div className="col-12">
+              <label className="form-label">Aspectos a indagar</label>
+              <textarea
+                name="aspectosIndagar"
+                className="form-control"
+                rows="2"
+                placeholder="Ej: funciones del cargo, liderazgo, confidencialidad..."
+                value={form.aspectosIndagar}
+                onChange={manejarCambio}
+              ></textarea>
+            </div>
+
+            <div className="col-12 d-flex flex-wrap gap-4 mt-1">
+              <div className="form-check">
+                <input
+                  type="checkbox"
+                  name="requiereReferencias"
+                  className="form-check-input"
+                  id="chkReferencias"
+                  checked={form.requiereReferencias}
+                  onChange={manejarCambio}
+                />
+                <label className="form-check-label" htmlFor="chkReferencias">Requiere referencias</label>
+              </div>
+              <div className="form-check">
+                <input
+                  type="checkbox"
+                  name="cvAdjunto"
+                  className="form-check-input"
+                  id="chkCv"
+                  checked={form.cvAdjunto}
+                  onChange={manejarCambio}
+                />
+                <label className="form-check-label" htmlFor="chkCv">CV adjunto</label>
+              </div>
+              <div className="form-check">
+                <input
+                  type="checkbox"
+                  name="descriptorAdjunto"
+                  className="form-check-input"
+                  id="chkDescriptor"
+                  checked={form.descriptorAdjunto}
+                  onChange={manejarCambio}
+                />
+                <label className="form-check-label" htmlFor="chkDescriptor">Descriptor de cargo adjunto</label>
+              </div>
+              <div className="form-check">
+                <input
+                  type="checkbox"
+                  name="esReferido"
+                  className="form-check-input"
+                  id="chkReferido"
+                  checked={form.esReferido}
+                  onChange={manejarCambio}
+                />
+                <label className="form-check-label" htmlFor="chkReferido">Candidato referido</label>
+              </div>
+            </div>
           </div>
 
           <button type="submit" className="btn btn-success mt-3">Crear solicitud</button>
         </form>
       )}
 
-      {/* Barra de filtros */}
       <div className="card border-0 shadow-sm mb-3">
         <div className="card-body">
           <div className="row g-3 align-items-end">
@@ -175,32 +281,15 @@ function Solicitudes() {
             </div>
             <div className="col-md-3">
               <label className="form-label small text-muted">Cargo</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Buscar por cargo..."
-                value={filtroCargo}
-                onChange={(e) => setFiltroCargo(e.target.value)}
-              />
+              <input type="text" className="form-control" placeholder="Buscar por cargo..." value={filtroCargo} onChange={(e) => setFiltroCargo(e.target.value)} />
             </div>
             <div className="col-md-3">
               <label className="form-label small text-muted">Candidato</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Buscar por nombre..."
-                value={filtroCandidato}
-                onChange={(e) => setFiltroCandidato(e.target.value)}
-              />
+              <input type="text" className="form-control" placeholder="Buscar por nombre..." value={filtroCandidato} onChange={(e) => setFiltroCandidato(e.target.value)} />
             </div>
             <div className="col-md-2">
               <label className="form-label small text-muted">Fecha</label>
-              <input
-                type="date"
-                className="form-control"
-                value={filtroFecha}
-                onChange={(e) => setFiltroFecha(e.target.value)}
-              />
+              <input type="date" className="form-control" value={filtroFecha} onChange={(e) => setFiltroFecha(e.target.value)} />
             </div>
             <div className="col-md-1">
               <button className="btn btn-outline-secondary w-100" onClick={limpiarFiltros} title="Limpiar filtros">
@@ -231,9 +320,7 @@ function Solicitudes() {
                 <td>{s.cargo}</td>
                 <td>{s.familiaCargo}</td>
                 <td>{s.fechaSolicitud}</td>
-                <td>
-                  <span className={`badge bg-${colorEstado(s.estado)}`}>{s.estado}</span>
-                </td>
+                <td><span className={`badge bg-${colorEstado(s.estado)}`}>{s.estado}</span></td>
                 <td>{s.responsable}</td>
                 <td className="d-flex gap-2">
                   <Link to={`/solicitudes/${s.id}`} className="btn btn-sm btn-outline-primary">
@@ -248,11 +335,7 @@ function Solicitudes() {
               </tr>
             ))}
             {solicitudesFiltradas.length === 0 && (
-              <tr>
-                <td colSpan="7" className="text-center text-muted py-3">
-                  No hay solicitudes que coincidan con los filtros.
-                </td>
-              </tr>
+              <tr><td colSpan="7" className="text-center text-muted py-3">No hay solicitudes que coincidan con los filtros.</td></tr>
             )}
           </tbody>
         </table>

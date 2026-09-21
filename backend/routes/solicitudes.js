@@ -12,12 +12,20 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { candidato_id, cargo, familia_cargo, fecha_solicitud, responsable } = req.body;
+  const {
+    candidato_id, cargo, familia_cargo, fecha_solicitud, responsable,
+    origen_candidato, unidad, requiere_referencias, ceco,
+    cv_adjunto, descriptor_adjunto, aspectos_indagar, es_referido,
+  } = req.body;
   try {
     const resultado = await pool.query(
-      `INSERT INTO solicitudes (candidato_id, cargo, familia_cargo, fecha_solicitud, estado, responsable, observaciones)
-       VALUES ($1, $2, $3, $4, 'Pendiente', $5, '') RETURNING *`,
-      [candidato_id, cargo, familia_cargo, fecha_solicitud, responsable]
+      `INSERT INTO solicitudes
+         (candidato_id, cargo, familia_cargo, fecha_solicitud, estado, responsable, observaciones,
+          origen_candidato, unidad, requiere_referencias, ceco, cv_adjunto, descriptor_adjunto, aspectos_indagar, es_referido)
+       VALUES ($1, $2, $3, $4, 'Pendiente', $5, '', $6, $7, $8, $9, $10, $11, $12, $13)
+       RETURNING *`,
+      [candidato_id, cargo, familia_cargo, fecha_solicitud, responsable,
+       origen_candidato, unidad, requiere_referencias, ceco, cv_adjunto, descriptor_adjunto, aspectos_indagar, es_referido]
     );
     res.status(201).json(resultado.rows[0]);
   } catch (error) {
