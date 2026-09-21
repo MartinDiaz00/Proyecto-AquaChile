@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Candidatos from "./pages/Candidatos";
 import Solicitudes from "./pages/Solicitudes";
+import NuevaSolicitud from "./pages/NuevaSolicitud";
 import DetalleSolicitud from "./pages/DetalleSolicitud";
 
 function AppContent() {
@@ -20,6 +21,7 @@ function AppContent() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/candidatos" element={<Candidatos />} />
           <Route path="/solicitudes" element={<Solicitudes />} />
+          <Route path="/nueva-solicitud" element={<NuevaSolicitud />} />
           <Route path="/solicitudes/:id" element={<DetalleSolicitud />} />
         </Routes>
       </BrowserRouter>
