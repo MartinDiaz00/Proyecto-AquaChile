@@ -5,7 +5,7 @@ export function useData() {
   return useContext(DataContext);
 }
 
-const API_URL = "http://localhost:4000/api";
+const API_URL = "https://proyecto-aquachile.onrender.com/api";
 const soloFecha = (valor) => (valor ? String(valor).slice(0, 10) : "");
 
 // --- Traductores entre snake_case (base de datos) y camelCase (React) ---
