@@ -25,10 +25,10 @@ function Login() {
 
   return (
     <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "100vh" }}>
-      <div className="card border-0 shadow p-4" style={{ maxWidth: "420px", width: "100%" }}>
+      <div className="card border-0 shadow-lg p-4" style={{ maxWidth: "420px", width: "100%", backgroundColor: "rgba(255,255,255,0.97)" }}>
         <div className="text-center mb-4">
           <i className="bi bi-water fs-1" style={{ color: "var(--turquesa)" }}></i>
-          <h4 className="mt-2 mb-0" style={{ color: "var(--azul-profundo)" }}>SGP Psicolaboral</h4>
+          <h4 className="mt-2 mb-0 fuente-marca fw-bold" style={{ color: "var(--azul-profundo)" }}>SGP Psicolaboral</h4>
           <p className="text-muted small mb-0">Acceso con usuario simulado (académico)</p>
         </div>
 

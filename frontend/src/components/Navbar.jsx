@@ -2,25 +2,36 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+function IconoAncla() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="5" r="2.2" stroke="#e6f5f4" strokeWidth="1.6" />
+      <line x1="12" y1="7.2" x2="12" y2="20" stroke="#e6f5f4" strokeWidth="1.6" />
+      <line x1="7" y1="10" x2="17" y2="10" stroke="#e6f5f4" strokeWidth="1.6" />
+      <path d="M4 13c0 4 3.5 6.5 8 7c4.5-0.5 8-3 8-7" stroke="#e6f5f4" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function Navbar() {
   const [abierto, setAbierto] = useState(false);
   const { usuario, cerrarSesion } = useAuth();
-  const { permisos } = useAuth();
 
   const enlaces = [
     { to: "/", label: "Dashboard", icon: "bi-speedometer2", exacto: true },
     { to: "/candidatos", label: "Candidatos", icon: "bi-people-fill", exacto: false },
     { to: "/solicitudes", label: "Solicitudes", icon: "bi-clipboard-check-fill", exacto: false },
   ];
+
   return (
     <nav
       className="px-4 py-3 sticky-top shadow"
-      style={{ background: "linear-gradient(90deg, var(--azul-profundo) 0%, var(--azul-medio) 60%, var(--turquesa) 130%)" }}
+      style={{ background: "linear-gradient(90deg, var(--azul-profundo) 0%, var(--azul-noche) 60%, var(--turquesa) 140%)" }}
     >
       <div className="d-flex align-items-center justify-content-between">
         <NavLink className="d-flex align-items-center gap-2 text-white text-decoration-none" to="/" onClick={() => setAbierto(false)}>
-          <i className="bi bi-water fs-4" style={{ color: "var(--turquesa-suave)" }}></i>
-          <span>
+          <IconoAncla />
+          <span className="fuente-marca">
             <span className="fw-bold">SGP</span>{" "}
             <span className="fw-light" style={{ opacity: 0.85 }}>Psicolaboral</span>
           </span>

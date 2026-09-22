@@ -11,6 +11,10 @@ function Dashboard() {
   const enProceso = solicitudes.filter((s) => s.estado === "En proceso").length;
   const finalizadas = solicitudes.filter((s) => s.estado === "Finalizada").length;
 
+  const idsConSolicitud = new Set(solicitudes.map((s) => s.candidatoId));
+  const sinSolicitud = candidatos.filter((c) => !idsConSolicitud.has(c.id)).length;
+  const porcentajeFinalizadas = solicitudes.length > 0 ? Math.round((finalizadas / solicitudes.length) * 100) : 0;
+
   const colorEstado = (estado) => {
     if (estado === "Pendiente") return "warning";
     if (estado === "En proceso") return "info";
@@ -18,16 +22,25 @@ function Dashboard() {
     return "secondary";
   };
 
+  const tarjetas = [
+    { label: "Total candidatos", valor: totalCandidatos, icono: "bi-people-fill", color: "var(--azul-medio)", link: "/candidatos" },
+    { label: "Pendientes", valor: pendientes, icono: "bi-hourglass-split", color: "#f0ad4e", link: "/solicitudes?estado=Pendiente" },
+    { label: "En proceso", valor: enProceso, icono: "bi-arrow-repeat", color: "#17a2b8", link: "/solicitudes?estado=En proceso" },
+    { label: "Finalizadas", valor: finalizadas, icono: "bi-check-circle-fill", color: "#28a745", link: "/solicitudes?estado=Finalizada" },
+    { label: "% Finalizadas", valor: `${porcentajeFinalizadas}%`, icono: "bi-graph-up-arrow", color: "var(--turquesa)", link: "/solicitudes" },
+    { label: "Sin solicitud aún", valor: sinSolicitud, icono: "bi-person-exclamation", color: "var(--salmon-acento)", link: "/candidatos" },
+  ];
+
   return (
     <div className="container mt-4">
       <div
         className="rounded-4 p-5 mb-4 text-white"
         style={{
-          background: "linear-gradient(120deg, var(--azul-profundo), var(--turquesa))",
+          background: "linear-gradient(90deg, var(--turquesa) 0%, var(--azul-noche) 65%, var(--azul-profundo) 100%)",
           minHeight: "180px",
         }}
       >
-        <h2 className="mb-1">
+        <h2 className="mb-1 fuente-marca fw-bold">
           <i className="bi bi-water me-2"></i>Panel de gestión
         </h2>
         <p className="mb-0" style={{ opacity: 0.9 }}>
@@ -40,51 +53,22 @@ function Dashboard() {
         )}
       </div>
 
-      <div className="row g-3 mb-4">
-        <div className="col-md-3">
-          <Link to="/candidatos" className="text-decoration-none text-reset">
-            <div className="card card-clickable text-center border-0 shadow-sm h-100">
-              <div className="card-body">
-                <i className="bi bi-people-fill fs-2" style={{ color: "var(--azul-medio)" }}></i>
-                <h6 className="text-muted mt-2">Total candidatos</h6>
-                <h2>{totalCandidatos}</h2>
+      <div className="row g-2 mb-4">
+        {tarjetas.map((t) => (
+          <div className="col-6 col-md-4 col-lg-2" key={t.label}>
+            <Link to={t.link} className="text-decoration-none text-reset">
+              <div className="card card-clickable border-0 shadow-sm h-100">
+                <div className="card-body d-flex align-items-center gap-2 py-3 px-3">
+                  <i className={`bi ${t.icono} fs-4`} style={{ color: t.color }}></i>
+                  <div>
+                    <div className="fw-bold fs-5 lh-1">{t.valor}</div>
+                    <div className="text-muted" style={{ fontSize: "0.72rem" }}>{t.label}</div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </Link>
-        </div>
-        <div className="col-md-3">
-          <Link to="/solicitudes?estado=Pendiente" className="text-decoration-none text-reset">
-            <div className="card card-clickable text-center border-0 shadow-sm h-100">
-              <div className="card-body">
-                <i className="bi bi-hourglass-split fs-2 text-warning"></i>
-                <h6 className="text-muted mt-2">Pendientes</h6>
-                <h2 className="text-warning">{pendientes}</h2>
-              </div>
-            </div>
-          </Link>
-        </div>
-        <div className="col-md-3">
-          <Link to="/solicitudes?estado=En proceso" className="text-decoration-none text-reset">
-            <div className="card card-clickable text-center border-0 shadow-sm h-100">
-              <div className="card-body">
-                <i className="bi bi-arrow-repeat fs-2 text-info"></i>
-                <h6 className="text-muted mt-2">En proceso</h6>
-                <h2 className="text-info">{enProceso}</h2>
-              </div>
-            </div>
-          </Link>
-        </div>
-        <div className="col-md-3">
-          <Link to="/solicitudes?estado=Finalizada" className="text-decoration-none text-reset">
-            <div className="card card-clickable text-center border-0 shadow-sm h-100">
-              <div className="card-body">
-                <i className="bi bi-check-circle-fill fs-2 text-success"></i>
-                <h6 className="text-muted mt-2">Finalizadas</h6>
-                <h2 className="text-success">{finalizadas}</h2>
-              </div>
-            </div>
-          </Link>
-        </div>
+            </Link>
+          </div>
+        ))}
       </div>
 
       <div className="card border-0 shadow-sm">
