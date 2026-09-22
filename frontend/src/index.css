@@ -75,3 +75,7 @@ body {
   justify-content: center;
   gap: 1rem;
 }
+.breadcrumb-oscuro {
+  --bs-breadcrumb-divider-color: rgba(255, 255, 255, 0.45);
+  --bs-breadcrumb-item-active-color: #ffffff;
+}

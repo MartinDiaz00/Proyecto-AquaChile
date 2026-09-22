@@ -8,6 +8,7 @@ function DetalleSolicitud() {
   const navigate = useNavigate();
   const { obtenerSolicitud, obtenerEvaluacion, cargarEvaluacion, guardarEvaluacion, candidatos } = useData();
   const { mostrarToast } = useToast();
+
   useEffect(() => {
     cargarEvaluacion(id);
   }, [id]);
@@ -23,8 +24,8 @@ function DetalleSolicitud() {
   });
   const [errores, setErrores] = useState({});
   const [guardadoOk, setGuardadoOk] = useState(false);
+  const [enviando, setEnviando] = useState(false);
 
-  // Si la ruta trae un id que no existe (ej. /solicitudes/999), avisamos en vez de romper la página
   if (!solicitud) {
     return (
       <div className="container mt-4">
@@ -69,6 +70,7 @@ function DetalleSolicitud() {
       setErrores(nuevosErrores);
       return;
     }
+    setEnviando(true);
     try {
       await guardarEvaluacion(id, form);
       setErrores({});
@@ -76,16 +78,17 @@ function DetalleSolicitud() {
       mostrarToast("Evaluación guardada correctamente");
     } catch (error) {
       mostrarToast("No se pudo guardar la evaluación. Revisa el backend.", "error");
+    } finally {
+      setEnviando(false);
     }
   };
 
   return (
     <div className="container mt-4">
-      {/* Breadcrumb de navegación */}
       <nav aria-label="breadcrumb" className="mb-3">
-        <ol className="breadcrumb">
+        <ol className="breadcrumb breadcrumb-oscuro">
           <li className="breadcrumb-item">
-            <Link to="/solicitudes" style={{ color: "var(--azul-medio)" }}>Solicitudes</Link>
+            <Link to="/solicitudes" style={{ color: "var(--turquesa-suave)" }}>Solicitudes</Link>
           </li>
           <li className="breadcrumb-item active" aria-current="page">
             Solicitud #{solicitud.id}
@@ -94,7 +97,6 @@ function DetalleSolicitud() {
       </nav>
 
       <div className="row g-4">
-        {/* Columna izquierda: información de la solicitud */}
         <div className="col-lg-5">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
@@ -153,7 +155,6 @@ function DetalleSolicitud() {
           </div>
         </div>
 
-        {/* Columna derecha: formulario de evaluación */}
         <div className="col-lg-7">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
@@ -218,9 +219,9 @@ function DetalleSolicitud() {
                 </div>
 
                 <div className="d-flex gap-2 mt-4">
-                  <button type="submit" className="btn btn-success">
+                  <button type="submit" className="btn btn-success" disabled={enviando}>
                     <i className="bi bi-save2-fill me-1"></i>
-                    {evaluacionExistente ? "Actualizar evaluación" : "Guardar evaluación"}
+                    {enviando ? "Guardando..." : evaluacionExistente ? "Actualizar evaluación" : "Guardar evaluación"}
                   </button>
                   <button type="button" className="btn btn-outline-secondary" onClick={() => navigate("/solicitudes")}>
                     Volver

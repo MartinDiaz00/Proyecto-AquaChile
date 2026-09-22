@@ -14,8 +14,8 @@ function PantallaCarga() {
   return (
     <div className="pantalla-carga">
       <i className="bi bi-water fs-1" style={{ color: "var(--turquesa)" }}></i>
-      <div className="spinner-border" style={{ color: "var(--azul-medio)" }} role="status"></div>
-      <p className="text-muted mb-0">Cargando SGP Psicolaboral...</p>
+      <div className="spinner-border" style={{ color: "var(--turquesa)" }} role="status"></div>
+      <p className="text-white mb-0" style={{ opacity: 0.85 }}>Cargando SGP Psicolaboral...</p>
     </div>
   );
 }

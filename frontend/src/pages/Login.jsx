@@ -38,7 +38,7 @@ function Login() {
             <input
               type="text"
               className={`form-control ${error ? "is-invalid" : ""}`}
-              placeholder="Ej: María Victoria"
+              placeholder="Ej: Jose Ignacio"
               value={nombre}
               onChange={(e) => { setNombre(e.target.value); setError(""); }}
             />

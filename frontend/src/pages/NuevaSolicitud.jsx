@@ -64,9 +64,9 @@ function NuevaSolicitud() {
   return (
     <div className="container mt-4" style={{ maxWidth: "760px" }}>
       <nav aria-label="breadcrumb" className="mb-3">
-        <ol className="breadcrumb">
+        <ol className="breadcrumb breadcrumb-oscuro">
           <li className="breadcrumb-item">
-            <Link to="/solicitudes" style={{ color: "var(--azul-medio)" }}>Solicitudes</Link>
+            <Link to="/solicitudes" style={{ color: "var(--turquesa-suave)" }}>Solicitudes</Link>
           </li>
           <li className="breadcrumb-item active" aria-current="page">Nueva solicitud</li>
         </ol>

@@ -37,7 +37,7 @@ function Solicitudes() {
   return (
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 style={{ color: "var(--azul-profundo)" }}>
+        <h2 className="text-white">
           <i className="bi bi-clipboard-check-fill me-2"></i>Solicitudes
         </h2>
         {permisos.solicitudes && (
