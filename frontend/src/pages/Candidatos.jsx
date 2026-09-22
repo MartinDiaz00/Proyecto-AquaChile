@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useData } from "../context/DataContext";
+import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 
 function Candidatos() {
   const { candidatos, agregarCandidato, editarCandidato } = useData();
+  const { mostrarToast } = useToast();
   const { permisos } = useAuth();
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editandoId, setEditandoId] = useState(null); // null = creando, número = editando ese id
@@ -41,12 +43,14 @@ function Candidatos() {
     try {
       if (editandoId) {
         await editarCandidato(editandoId, form);
+        mostrarToast("Candidato actualizado correctamente");
       } else {
         await agregarCandidato(form);
+        mostrarToast("Candidato registrado correctamente");
       }
       cerrarFormulario();
     } catch (error) {
-      alert("Ocurrió un error al guardar. Revisa que el backend esté corriendo.");
+      mostrarToast("Ocurrió un error al guardar. Revisa el backend.", "error");
     }
   };
 
@@ -187,6 +191,14 @@ function Candidatos() {
                 </td>
               </tr>
             ))}
+            {candidatos.length === 0 && (
+              <tr>
+                <td colSpan="6" className="text-center text-muted py-4">
+                  <i className="bi bi-inbox fs-3 d-block mb-2"></i>
+                  Aún no hay candidatos registrados.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

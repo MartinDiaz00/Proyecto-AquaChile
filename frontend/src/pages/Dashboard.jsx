@@ -42,40 +42,48 @@ function Dashboard() {
 
       <div className="row g-3 mb-4">
         <div className="col-md-3">
-          <div className="card text-center border-0 shadow-sm h-100">
-            <div className="card-body">
-              <i className="bi bi-people-fill fs-2" style={{ color: "var(--azul-medio)" }}></i>
-              <h6 className="text-muted mt-2">Total candidatos</h6>
-              <h2>{totalCandidatos}</h2>
+          <Link to="/candidatos" className="text-decoration-none text-reset">
+            <div className="card card-clickable text-center border-0 shadow-sm h-100">
+              <div className="card-body">
+                <i className="bi bi-people-fill fs-2" style={{ color: "var(--azul-medio)" }}></i>
+                <h6 className="text-muted mt-2">Total candidatos</h6>
+                <h2>{totalCandidatos}</h2>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
         <div className="col-md-3">
-          <div className="card text-center border-0 shadow-sm h-100">
-            <div className="card-body">
-              <i className="bi bi-hourglass-split fs-2 text-warning"></i>
-              <h6 className="text-muted mt-2">Pendientes</h6>
-              <h2 className="text-warning">{pendientes}</h2>
+          <Link to="/solicitudes?estado=Pendiente" className="text-decoration-none text-reset">
+            <div className="card card-clickable text-center border-0 shadow-sm h-100">
+              <div className="card-body">
+                <i className="bi bi-hourglass-split fs-2 text-warning"></i>
+                <h6 className="text-muted mt-2">Pendientes</h6>
+                <h2 className="text-warning">{pendientes}</h2>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
         <div className="col-md-3">
-          <div className="card text-center border-0 shadow-sm h-100">
-            <div className="card-body">
-              <i className="bi bi-arrow-repeat fs-2 text-info"></i>
-              <h6 className="text-muted mt-2">En proceso</h6>
-              <h2 className="text-info">{enProceso}</h2>
+          <Link to="/solicitudes?estado=En proceso" className="text-decoration-none text-reset">
+            <div className="card card-clickable text-center border-0 shadow-sm h-100">
+              <div className="card-body">
+                <i className="bi bi-arrow-repeat fs-2 text-info"></i>
+                <h6 className="text-muted mt-2">En proceso</h6>
+                <h2 className="text-info">{enProceso}</h2>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
         <div className="col-md-3">
-          <div className="card text-center border-0 shadow-sm h-100">
-            <div className="card-body">
-              <i className="bi bi-check-circle-fill fs-2 text-success"></i>
-              <h6 className="text-muted mt-2">Finalizadas</h6>
-              <h2 className="text-success">{finalizadas}</h2>
+          <Link to="/solicitudes?estado=Finalizada" className="text-decoration-none text-reset">
+            <div className="card card-clickable text-center border-0 shadow-sm h-100">
+              <div className="card-body">
+                <i className="bi bi-check-circle-fill fs-2 text-success"></i>
+                <h6 className="text-muted mt-2">Finalizadas</h6>
+                <h2 className="text-success">{finalizadas}</h2>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
       </div>
 
@@ -84,30 +92,37 @@ function Dashboard() {
           <h5 className="mb-3">
             <i className="bi bi-clock-history me-2"></i>Solicitudes recientes
           </h5>
-          <table className="table table-hover align-middle mb-0">
-            <thead className="table-light">
-              <tr>
-                <th>Candidato</th>
-                <th>Cargo</th>
-                <th>Fecha solicitud</th>
-                <th>Estado</th>
-                <th>Responsable</th>
-              </tr>
-            </thead>
-            <tbody>
-              {solicitudes.map((s) => (
-                <tr key={s.id}>
-                  <td>{nombreCandidato(s.candidatoId)}</td>
-                  <td>{s.cargo}</td>
-                  <td>{s.fechaSolicitud}</td>
-                  <td>
-                    <span className={`badge bg-${colorEstado(s.estado)}`}>{s.estado}</span>
-                  </td>
-                  <td>{s.responsable}</td>
+          <div className="table-responsive">
+            <table className="table table-hover align-middle mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th>Candidato</th>
+                  <th>Cargo</th>
+                  <th>Fecha solicitud</th>
+                  <th>Estado</th>
+                  <th>Responsable</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {solicitudes.slice(0, 8).map((s) => (
+                  <tr key={s.id}>
+                    <td>{nombreCandidato(s.candidatoId)}</td>
+                    <td>{s.cargo}</td>
+                    <td>{s.fechaSolicitud}</td>
+                    <td>
+                      <span className={`badge bg-${colorEstado(s.estado)}`}>{s.estado}</span>
+                    </td>
+                    <td>{s.responsable}</td>
+                  </tr>
+                ))}
+                {solicitudes.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="text-center text-muted py-3">Aún no hay solicitudes registradas.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -8,7 +8,8 @@ function Solicitudes() {
   const { permisos } = useAuth();
   const navigate = useNavigate();
 
-  const [filtroEstado, setFiltroEstado] = useState("Todos");
+  const [searchParams] = useSearchParams();
+  const [filtroEstado, setFiltroEstado] = useState(searchParams.get("estado") || "Todos");
   const [filtroCargo, setFiltroCargo] = useState("");
   const [filtroCandidato, setFiltroCandidato] = useState("");
   const [filtroFecha, setFiltroFecha] = useState("");

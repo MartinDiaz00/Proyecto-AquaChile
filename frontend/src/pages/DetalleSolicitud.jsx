@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useData } from "../context/DataContext";
+import { useToast } from "../context/ToastContext";
 
 function DetalleSolicitud() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { obtenerSolicitud, obtenerEvaluacion, cargarEvaluacion, guardarEvaluacion, candidatos } = useData();
+  const { mostrarToast } = useToast();
   useEffect(() => {
     cargarEvaluacion(id);
   }, [id]);
@@ -71,8 +73,9 @@ function DetalleSolicitud() {
       await guardarEvaluacion(id, form);
       setErrores({});
       setGuardadoOk(true);
+      mostrarToast("Evaluación guardada correctamente");
     } catch (error) {
-      alert("No se pudo guardar la evaluación. Revisa que el backend esté corriendo.");
+      mostrarToast("No se pudo guardar la evaluación. Revisa el backend.", "error");
     }
   };
 

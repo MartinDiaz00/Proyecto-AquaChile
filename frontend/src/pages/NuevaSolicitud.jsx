@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useData } from "../context/DataContext";
+import { useToast } from "../context/ToastContext";
 
 function NuevaSolicitud() {
   const { candidatos, agregarSolicitud } = useData();
+  const { mostrarToast } = useToast();
   const navigate = useNavigate();
 
   const formVacio = {
@@ -51,9 +53,10 @@ function NuevaSolicitud() {
     setEnviando(true);
     try {
       await agregarSolicitud({ ...form, candidatoId: Number(form.candidatoId) });
+      mostrarToast("Solicitud creada correctamente");
       navigate("/solicitudes");
     } catch (error) {
-      alert("No se pudo enviar la solicitud. Revisa que el backend esté corriendo.");
+      mostrarToast("No se pudo enviar la solicitud. Revisa el backend.", "error");
       setEnviando(false);
     }
   };
