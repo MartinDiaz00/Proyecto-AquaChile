@@ -2,8 +2,30 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { useAuth } from "../context/AuthContext";
+import * as XLSX from "xlsx";
 
 function Solicitudes() {
+  const exportarAExcel = () => {
+    const datosExportar = solicitudesFiltradas.map((s) => ({
+      Candidato: nombreCandidato(s.candidatoId),
+      Cargo: s.cargo,
+      "Familia de cargo": s.familiaCargo,
+      "Fecha solicitud": s.fechaSolicitud,
+      Estado: s.estado,
+      Responsable: s.responsable,
+      "Aspectos a Indagar": s.aspectosIndagar,
+    }));
+
+    const hoja = XLSX.utils.json_to_sheet(datosExportar);
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, "Status Evaluaciones");
+
+    XLSX.writeFile(
+      libro,
+      `Solicitudes_Psicolaborales_AquaChile_${new Date().toISOString().slice(0, 10)}.xlsx`
+    );
+  };
+
   const { solicitudes, candidatos, avanzarEstado, nombreCandidato } = useData();
   const { permisos } = useAuth();
   const navigate = useNavigate();
@@ -40,11 +62,16 @@ function Solicitudes() {
         <h2 className="text-white">
           <i className="bi bi-clipboard-check-fill me-2"></i>Solicitudes
         </h2>
-        {permisos.solicitudes && (
-          <button className="btn btn-primary" onClick={() => navigate("/nueva-solicitud")}>
-            <i className="bi bi-plus-lg me-1"></i>Nueva solicitud
+        <div className="d-flex gap-2">
+          <button className="btn btn-outline-success" onClick={exportarAExcel}>
+            <i className="bi bi-file-earmark-excel me-1"></i>Exportar a Excel
           </button>
-        )}
+          {permisos.solicitudes && (
+            <button className="btn btn-primary" onClick={() => navigate("/nueva-solicitud")}>
+              <i className="bi bi-plus-lg me-1"></i>Nueva solicitud
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card border-0 shadow-sm mb-3">
@@ -90,7 +117,7 @@ function Solicitudes() {
               <th>Fecha solicitud</th>
               <th>Estado</th>
               <th>Responsable</th>
-              <th></th>
+              <th>Aspectos a Indagar</th>
             </tr>
           </thead>
           <tbody>
@@ -102,6 +129,7 @@ function Solicitudes() {
                 <td>{s.fechaSolicitud}</td>
                 <td><span className={`badge bg-${colorEstado(s.estado)}`}>{s.estado}</span></td>
                 <td>{s.responsable}</td>
+                <td>{s["Aspectos a Indagar"]}</td>
                 <td className="d-flex gap-2">
                   <Link to={`/solicitudes/${s.id}`} className="btn btn-sm btn-outline-primary">
                     <i className="bi bi-eye-fill me-1"></i>Ver

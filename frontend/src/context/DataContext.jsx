@@ -90,23 +90,26 @@ export function DataProvider({ children }) {
     return nuevo;
   };
   
-    const editarCandidato = async (id, form) => {
-    const resultado = await fetch(`${API_URL}/candidatos/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nombre: form.nombre,
-        correo: form.correo,
-        telefono: form.telefono,
-        cargo_postulado: form.cargoPostulado,
-        familia_cargo: form.familiaCargo,
-      }),
-    });
-    if (!resultado.ok) throw new Error("No se pudo actualizar el candidato");
-    const actualizado = candidatoDesdeApi(await resultado.json());
-    setCandidatos((prev) => prev.map((c) => (c.id === id ? actualizado : c)));
-    return actualizado;
-  };
+const editarCandidato = async (id, form) => {
+  const resultado = await fetch(`${API_URL}/candidatos/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      nombre: form.nombre,
+      correo: form.correo,
+      telefono: form.telefono,
+      cargo_postulado: form.cargoPostulado,
+      familia_cargo: form.familiaCargo,
+    }),
+  });
+  if (!resultado.ok) {
+    const errorData = await resultado.json().catch(() => ({}));
+    throw new Error(errorData.error || "No se pudo actualizar el candidato");
+  }
+  const actualizado = candidatoDesdeApi(await resultado.json());
+  setCandidatos((prev) => prev.map((c) => (c.id === id ? actualizado : c)));
+  return actualizado;
+};
 
   const agregarSolicitud = async (form) => {
     const resultado = await fetch(`${API_URL}/solicitudes`, {

@@ -36,29 +36,25 @@ function Candidatos() {
     return nuevosErrores;
   };
 
-  const manejarEnvio = async (e) => {
-    e.preventDefault();
-    const nuevosErrores = validar();
-    if (Object.keys(nuevosErrores).length > 0) {
-      setErrores(nuevosErrores);
-      return;
+const manejarEnvio = async (e) => {
+  e.preventDefault();
+  const nuevosErrores = validar();
+  if (Object.keys(nuevosErrores).length > 0) {
+    setErrores(nuevosErrores);
+    return;
+  }
+  try {
+    if (editandoId) {
+      await editarCandidato(editandoId, form);
+    } else {
+      await agregarCandidato(form);
     }
-    setEnviando(true);
-    try {
-      if (editandoId) {
-        await editarCandidato(editandoId, form);
-        mostrarToast("Candidato actualizado correctamente");
-      } else {
-        await agregarCandidato(form);
-        mostrarToast("Candidato registrado correctamente");
-      }
-      cerrarFormulario();
-    } catch (error) {
-      mostrarToast("Ocurrió un error al guardar. Revisa el backend.", "error");
-    } finally {
-      setEnviando(false);
-    }
-  };
+    cerrarFormulario();
+  } catch (error) {
+    console.error("Error real al guardar candidato:", error);
+    alert(`Ocurrió un error al guardar: ${error.message}`);
+  }
+};
 
   const empezarEdicion = (candidato) => {
     setForm({
