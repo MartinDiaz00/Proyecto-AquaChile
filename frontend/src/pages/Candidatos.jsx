@@ -36,25 +36,32 @@ function Candidatos() {
     return nuevosErrores;
   };
 
-const manejarEnvio = async (e) => {
-  e.preventDefault();
+  const manejarEnvio = async (e) => {
+    e.preventDefault();
+
   const nuevosErrores = validar();
-  if (Object.keys(nuevosErrores).length > 0) {
-    setErrores(nuevosErrores);
-    return;
-  }
-  try {
-    if (editandoId) {
-      await editarCandidato(editandoId, form);
-    } else {
-      await agregarCandidato(form);
+    if (Object.keys(nuevosErrores).length > 0) {
+      setErrores(nuevosErrores);
+      return;
     }
-    cerrarFormulario();
-  } catch (error) {
-    console.error("Error real al guardar candidato:", error);
-    alert(`Ocurrió un error al guardar: ${error.message}`);
-  }
-};
+
+    setEnviando(true);
+
+    try {
+      if (editandoId) {
+        await editarCandidato(editandoId, form);
+      } else {
+        await agregarCandidato(form);
+      }
+
+      cerrarFormulario();
+    } catch (error) {
+      console.error("Error real al guardar candidato:", error);
+      alert(`Ocurrió un error al guardar: ${error.message}`);
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   const empezarEdicion = (candidato) => {
     setForm({

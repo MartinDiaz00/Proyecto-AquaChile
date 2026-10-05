@@ -202,6 +202,7 @@ const editarCandidato = async (id, form) => {
         cargando,
         error,
         agregarCandidato,
+        editarCandidato,
         agregarSolicitud,
         avanzarEstado,
         obtenerSolicitud,
