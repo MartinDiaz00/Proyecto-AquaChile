@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
 function Candidatos() {
-  const { candidatos, agregarCandidato, editarCandidato } = useData();
+  const { candidatos, agregarCandidato, editarCandidato, eliminarCandidato, guardando } = useData();
   const { permisos } = useAuth();
   const { mostrarToast } = useToast();
 
@@ -12,6 +12,7 @@ function Candidatos() {
   const [editandoId, setEditandoId] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [eliminandoId, setEliminandoId] = useState(null);
 
   const formVacio = { nombre: "", correo: "", telefono: "", cargoPostulado: "", familiaCargo: "" };
   const [form, setForm] = useState(formVacio);
@@ -50,14 +51,16 @@ function Candidatos() {
     try {
       if (editandoId) {
         await editarCandidato(editandoId, form);
+        mostrarToast("Candidato actualizado correctamente");
       } else {
         await agregarCandidato(form);
+        mostrarToast("Candidato creado correctamente");
       }
 
       cerrarFormulario();
     } catch (error) {
-      console.error("Error real al guardar candidato:", error);
-      alert(`Ocurrió un error al guardar: ${error.message}`);
+      console.error("Error al guardar candidato:", error);
+      mostrarToast(`Error: ${error.message}`, "error");
     } finally {
       setEnviando(false);
     }
@@ -82,6 +85,22 @@ function Candidatos() {
     setMostrarForm(false);
   };
 
+  const confirmarEliminar = async (id, nombre) => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar al candidato "${nombre}"?\n\nEsta acción no se puede deshacer si el candidato tiene solicitudes asociadas.`)) {
+      return;
+    }
+    setEliminandoId(id);
+    try {
+      await eliminarCandidato(id);
+      mostrarToast("Candidato eliminado correctamente");
+    } catch (error) {
+      console.error("Error eliminando candidato:", error);
+      mostrarToast(`Error: ${error.message}`, "error");
+    } finally {
+      setEliminandoId(null);
+    }
+  };
+
   const candidatosFiltrados = candidatos.filter((c) => {
     const texto = busqueda.toLowerCase();
     return (
@@ -100,6 +119,7 @@ function Candidatos() {
         {permisos.candidatos && (
           <button
             className="btn btn-primary"
+            disabled={guardando}
             onClick={() => (mostrarForm ? cerrarFormulario() : setMostrarForm(true))}
           >
             {mostrarForm ? "Cancelar" : "+ Nuevo candidato"}
@@ -175,7 +195,7 @@ function Candidatos() {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-success mt-3" disabled={enviando}>
+          <button type="submit" className="btn btn-success mt-3" disabled={enviando || guardando}>
             {enviando ? "Guardando..." : editandoId ? "Guardar cambios" : "Guardar candidato"}
           </button>
         </form>
@@ -205,7 +225,7 @@ function Candidatos() {
               <th>Teléfono</th>
               <th>Cargo postulado</th>
               <th>Familia de cargo</th>
-              <th></th>
+              <th className="text-end">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -213,13 +233,18 @@ function Candidatos() {
               <tr key={c.id}>
                 <td>{c.nombre}</td>
                 <td>{c.correo}</td>
-                <td>{c.telefono}</td>
+                <td>{c.telefono || "—"}</td>
                 <td>{c.cargoPostulado}</td>
                 <td>{c.familiaCargo}</td>
-                <td>
+                <td className="text-end d-flex justify-content-end gap-2">
                   {permisos.candidatos && (
                     <button className="btn btn-sm btn-outline-primary" onClick={() => empezarEdicion(c)}>
                       <i className="bi bi-pencil-fill me-1"></i>Editar
+                    </button>
+                  )}
+                  {permisos.candidatos && (
+                    <button className="btn btn-sm btn-outline-danger" onClick={() => confirmarEliminar(c.id, c.nombre)} disabled={eliminandoId === c.id}>
+                      {eliminandoId === c.id ? "Eliminando..." : <i className="bi bi-trash-fill me-1"></i>Eliminar}
                     </button>
                   )}
                 </td>

@@ -7,7 +7,7 @@ import { useAuth } from "../context/AuthContext";
 function DetalleSolicitud() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { obtenerSolicitud, obtenerEvaluacion, cargarEvaluacion, guardarEvaluacion, candidatos } = useData();
+  const { obtenerSolicitud, obtenerEvaluacion, cargarEvaluacion, guardarEvaluacion, candidatos, guardando } = useData();
   const { permisos } = useAuth();
   const { mostrarToast } = useToast();
 
@@ -33,7 +33,7 @@ function DetalleSolicitud() {
       <div className="container mt-4">
         <div className="alert alert-warning">
           No se encontró la solicitud #{id}.{" "}
-          <Link to="/solicitudes">Volver a Solicitudes</Link>
+          <Link to="/solicitudes" className="alert-link">Volver a Solicitudes</Link>
         </div>
       </div>
     );
@@ -117,6 +117,9 @@ function DetalleSolicitud() {
 
                 <dt className="col-5 text-muted">Correo</dt>
                 <dd className="col-7">{candidato?.correo || "—"}</dd>
+
+                <dt className="col-5 text-muted">Teléfono</dt>
+                <dd className="col-7">{candidato?.telefono || "—"}</dd>
 
                 <dt className="col-5 text-muted">Cargo</dt>
                 <dd className="col-7">{solicitud.cargo}</dd>
@@ -235,7 +238,7 @@ function DetalleSolicitud() {
                 </div>
 
                 <div className="d-flex gap-2 mt-4">
-                  <button type="submit" className="btn btn-success" disabled={enviando}>
+                  <button type="submit" className="btn btn-success" disabled={enviando || guardando}>
                     <i className="bi bi-save2-fill me-1"></i>
                     {enviando ? "Guardando..." : evaluacionExistente ? "Actualizar evaluación" : "Guardar evaluación"}
                   </button>

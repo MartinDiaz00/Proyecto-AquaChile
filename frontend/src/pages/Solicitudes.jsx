@@ -5,28 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import * as XLSX from "xlsx";
 
 function Solicitudes() {
-  const exportarAExcel = () => {
-    const datosExportar = solicitudesFiltradas.map((s) => ({
-      Candidato: nombreCandidato(s.candidatoId),
-      Cargo: s.cargo,
-      "Familia de cargo": s.familiaCargo,
-      "Fecha solicitud": s.fechaSolicitud,
-      Estado: s.estado,
-      Responsable: s.responsable,
-      "Aspectos a Indagar": s.aspectosIndagar,
-    }));
-
-    const hoja = XLSX.utils.json_to_sheet(datosExportar);
-    const libro = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(libro, hoja, "Status Evaluaciones");
-
-    XLSX.writeFile(
-      libro,
-      `Solicitudes_Psicolaborales_AquaChile_${new Date().toISOString().slice(0, 10)}.xlsx`
-    );
-  };
-
-  const { solicitudes, candidatos, avanzarEstado, nombreCandidato } = useData();
+  const { solicitudes, candidatos, avanzarEstado, nombreCandidato, cargando } = useData();
   const { permisos } = useAuth();
   const navigate = useNavigate();
 
@@ -56,6 +35,38 @@ function Solicitudes() {
     .filter((s) => nombreCandidato(s.candidatoId).toLowerCase().includes(filtroCandidato.toLowerCase()))
     .filter((s) => !filtroFecha || s.fechaSolicitud === filtroFecha);
 
+  const exportarAExcel = () => {
+    const datosExportar = solicitudesFiltradas.map((s) => ({
+      "Nº Solicitud": s.id,
+      Candidato: nombreCandidato(s.candidatoId),
+      Cargo: s.cargo,
+      "Familia de cargo": s.familiaCargo,
+      "Fecha solicitud": s.fechaSolicitud,
+      Estado: s.estado,
+      Responsable: s.responsable,
+      "Aspectos a Indagar": s.aspectosIndagar || "",
+    }));
+
+    const hoja = XLSX.utils.json_to_sheet(datosExportar);
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, "Solicitudes");
+
+    XLSX.writeFile(
+      libro,
+      `Solicitudes_Psicolaborales_AquaChile_${new Date().toISOString().slice(0, 10)}.xlsx`
+    );
+  };
+
+  if (cargando) {
+    return (
+      <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando solicitudes...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -63,7 +74,7 @@ function Solicitudes() {
           <i className="bi bi-clipboard-check-fill me-2"></i>Solicitudes
         </h2>
         <div className="d-flex gap-2">
-          <button className="btn btn-outline-success" onClick={exportarAExcel}>
+          <button className="btn btn-outline-success" onClick={exportarAExcel} disabled={solicitudesFiltradas.length === 0}>
             <i className="bi bi-file-earmark-excel me-1"></i>Exportar a Excel
           </button>
           {permisos.crearSolicitud && (
@@ -111,6 +122,7 @@ function Solicitudes() {
         <table className="table table-hover align-middle">
           <thead className="table-light">
             <tr>
+              <th>Nº</th>
               <th>Candidato</th>
               <th>Cargo</th>
               <th>Familia de cargo</th>
@@ -124,6 +136,7 @@ function Solicitudes() {
           <tbody>
             {solicitudesFiltradas.map((s) => (
               <tr key={s.id}>
+                <td>#{s.id}</td>
                 <td>{nombreCandidato(s.candidatoId)}</td>
                 <td>{s.cargo}</td>
                 <td>{s.familiaCargo}</td>
@@ -144,7 +157,10 @@ function Solicitudes() {
               </tr>
             ))}
             {solicitudesFiltradas.length === 0 && (
-              <tr><td colSpan="8" className="text-center text-muted py-3">No hay solicitudes que coincidan con los filtros.</td></tr>
+              <tr><td colSpan="9" className="text-center text-muted py-4">
+                <i className="bi bi-inbox fs-3 d-block mb-2"></i>
+                No hay solicitudes que coincidan con los filtros.
+              </td></tr>
             )}
           </tbody>
         </table>

@@ -51,11 +51,10 @@ export function DataProvider({ children }) {
   const [evaluaciones, setEvaluaciones] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  const [guardando, setGuardando] = useState(false);
 
   const flujoEstados = ["Pendiente", "En proceso", "Finalizada"];
 
-  // Al abrir la app, trae candidatos y solicitudes reales desde la base de datos
-  // Solo si hay sesión activa (token). Si no hay sesión, no hay nada que cargar.
   useEffect(() => {
     const token = localStorage.getItem("tokenSGP");
     if (!token) {
@@ -64,6 +63,8 @@ export function DataProvider({ children }) {
     }
 
     let vigente = true;
+    setCargando(true);
+
     Promise.all([
       apiFetch("/candidatos"),
       apiFetch("/solicitudes"),
@@ -84,6 +85,8 @@ export function DataProvider({ children }) {
                 solicitudesApi.mensaje ||
                 "No se pudieron cargar los datos."
             );
+          } else {
+            setError("No se pudo conectar con el servidor. Verifica que el backend esté corriendo.");
           }
         } else {
           setCandidatos(candidatosApi.map(candidatoDesdeApi));
@@ -94,95 +97,116 @@ export function DataProvider({ children }) {
       .catch((e) => {
         if (!vigente) return;
         setCargando(false);
+        setError("No se pudo conectar con el servidor. Verifica que el backend esté corriendo.");
       });
 
     return () => { vigente = false; };
   }, [API_URL]);
 
   const agregarCandidato = async (form) => {
-    const resultado = await apiFetch("/candidatos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nombre: form.nombre,
-        correo: form.correo,
-        telefono: form.telefono,
-        cargo_postulado: form.cargoPostulado,
-        familia_cargo: form.familiaCargo,
-      }),
-    });
-    if (!resultado.ok) {
-      const errorData = await resultado.safeJson();
-      const detalle =
-        errorData.error ||
-        errorData.mensaje ||
-        (errorData._raw ? `Respuesta no JSON: ${errorData._raw.slice(0, 200)}` : "") ||
-        "sin respuesta del servidor";
-      throw new Error(`Error ${resultado.status}: ${detalle}`);
+    setGuardando(true);
+    try {
+      const resultado = await apiFetch("/candidatos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: form.nombre,
+          correo: form.correo,
+          telefono: form.telefono,
+          cargo_postulado: form.cargoPostulado,
+          familia_cargo: form.familiaCargo,
+        }),
+      });
+      if (!resultado.ok) {
+        const errorData = await resultado.safeJson();
+        const detalle = errorData.error || errorData.mensaje || "sin respuesta del servidor";
+        throw new Error(`Error ${resultado.status}: ${detalle}`);
+      }
+      const nuevo = candidatoDesdeApi(await resultado.safeJson());
+      setCandidatos((prev) => [...prev, nuevo]);
+      return nuevo;
+    } finally {
+      setGuardando(false);
     }
-    const nuevo = candidatoDesdeApi(await resultado.safeJson());
-    setCandidatos((prev) => [...prev, nuevo]);
-    return nuevo;
   };
 
   const editarCandidato = async (id, form) => {
-    const resultado = await apiFetch(`/candidatos/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nombre: form.nombre,
-        correo: form.correo,
-        telefono: form.telefono,
-        cargo_postulado: form.cargoPostulado,
-        familia_cargo: form.familiaCargo,
-      }),
-    });
-    if (!resultado.ok) {
-      const errorData = await resultado.safeJson();
-      const detalle =
-        errorData.error ||
-        errorData.mensaje ||
-        (errorData._raw ? `Respuesta no JSON: ${errorData._raw.slice(0, 200)}` : "") ||
-        "sin respuesta del servidor";
-      throw new Error(`Error ${resultado.status}: ${detalle}`);
+    setGuardando(true);
+    try {
+      const resultado = await apiFetch(`/candidatos/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: form.nombre,
+          correo: form.correo,
+          telefono: form.telefono,
+          cargo_postulado: form.cargoPostulado,
+          familia_cargo: form.familiaCargo,
+        }),
+      });
+      if (!resultado.ok) {
+        const errorData = await resultado.safeJson();
+        const detalle = errorData.error || errorData.mensaje || "sin respuesta del servidor";
+        throw new Error(`Error ${resultado.status}: ${detalle}`);
+      }
+      const actualizado = candidatoDesdeApi(await resultado.safeJson());
+      setCandidatos((prev) => prev.map((c) => (c.id === id ? actualizado : c)));
+      return actualizado;
+    } finally {
+      setGuardando(false);
     }
-    const actualizado = candidatoDesdeApi(await resultado.safeJson());
-    setCandidatos((prev) => prev.map((c) => (c.id === id ? actualizado : c)));
-    return actualizado;
+  };
+
+  const eliminarCandidato = async (id) => {
+    setGuardando(true);
+    try {
+      const resultado = await apiFetch(`/candidatos/${id}`, {
+        method: "DELETE",
+      });
+      if (!resultado.ok) {
+        const errorData = await resultado.safeJson();
+        throw new Error(errorData.error || errorData.mensaje || "No se pudo eliminar el candidato.");
+      }
+      setCandidatos((prev) => prev.filter((c) => c.id !== id));
+      return resultado.safeJson();
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const agregarSolicitud = async (form) => {
-    const resultado = await apiFetch("/solicitudes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        candidato_id: form.candidatoId,
-        cargo: form.cargo,
-        familia_cargo: form.familiaCargo,
-        fecha_solicitud: form.fechaSolicitud,
-        responsable: form.responsable,
-        origen_candidato: form.origenCandidato,
-        unidad: form.unidad,
-        requiere_referencias: form.requiereReferencias,
-        ceco: form.ceco,
-        cv_adjunto: form.cvAdjunto,
-        descriptor_adjunto: form.descriptorAdjunto,
-        aspectos_indagar: form.aspectosIndagar,
-        es_referido: form.esReferido,
-      }),
-    });
-    if (!resultado.ok) {
-      const errorData = await resultado.safeJson();
-      const detalle =
-        errorData.error ||
-        errorData.mensaje ||
-        (errorData._raw ? `Respuesta no JSON: ${errorData._raw.slice(0, 200)}` : "") ||
-        "sin respuesta del servidor";
-      throw new Error(`Error ${resultado.status}: ${detalle}`);
+    setGuardando(true);
+    try {
+      const resultado = await apiFetch("/solicitudes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          candidato_id: form.candidatoId,
+          cargo: form.cargo,
+          familia_cargo: form.familiaCargo,
+          fecha_solicitud: form.fechaSolicitud,
+          responsable: form.responsable,
+          origen_candidato: form.origenCandidato,
+          unidad: form.unidad,
+          requiere_referencias: form.requiereReferencias,
+          ceco: form.ceco,
+          cv_adjunto: form.cvAdjunto,
+          descriptor_adjunto: form.descriptorAdjunto,
+          aspectos_indagar: form.aspectosIndagar,
+          es_referido: form.esReferido,
+        }),
+      });
+      if (!resultado.ok) {
+        const errorData = await resultado.safeJson();
+        const detalle = errorData.error || errorData.mensaje || "sin respuesta del servidor";
+        throw new Error(`Error ${resultado.status}: ${detalle}`);
+      }
+      const nueva = solicitudDesdeApi(await resultado.safeJson());
+      setSolicitudes((prev) => [nueva, ...prev]);
+      return nueva;
+    } finally {
+      setGuardando(false);
     }
-    const nueva = solicitudDesdeApi(await resultado.safeJson());
-    setSolicitudes((prev) => [...prev, nueva]);
-    return nueva;
   };
 
   const avanzarEstado = async (id) => {
@@ -192,22 +216,22 @@ export function DataProvider({ children }) {
     const siguiente = flujoEstados[indiceActual + 1];
     if (!siguiente) return;
 
-    const resultado = await apiFetch(`/solicitudes/${id}/estado`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estado: siguiente }),
-    });
-    if (!resultado.ok) {
-      const errorData = await resultado.safeJson();
-      const detalle =
-        errorData.error ||
-        errorData.mensaje ||
-        (errorData._raw ? `Respuesta no JSON: ${errorData._raw.slice(0, 200)}` : "") ||
-        "sin respuesta del servidor";
-      throw new Error(`Error ${resultado.status}: ${detalle}`);
+    setGuardando(true);
+    try {
+      const resultado = await apiFetch(`/solicitudes/${id}/estado`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: siguiente }),
+      });
+      if (!resultado.ok) {
+        const errorData = await resultado.safeJson();
+        throw new Error(errorData.error || errorData.mensaje || "No se pudo actualizar el estado.");
+      }
+      const actualizada = solicitudDesdeApi(await resultado.safeJson());
+      setSolicitudes((prev) => prev.map((s) => (s.id === id ? actualizada : s)));
+    } finally {
+      setGuardando(false);
     }
-    const actualizada = solicitudDesdeApi(await resultado.safeJson());
-    setSolicitudes((prev) => prev.map((s) => (s.id === id ? actualizada : s)));
   };
 
   const obtenerSolicitud = (id) => solicitudes.find((s) => s.id === Number(id));
@@ -224,31 +248,31 @@ export function DataProvider({ children }) {
   };
 
   const guardarEvaluacion = async (solicitudId, form) => {
-    const resultado = await apiFetch("/evaluaciones", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        solicitud_id: Number(solicitudId),
-        fecha_evaluacion: form.fechaEvaluacion,
-        resultado: form.resultado,
-        observaciones: form.observaciones,
-      }),
-    });
-    if (!resultado.ok) {
-      const errorData = await resultado.safeJson();
-      const detalle =
-        errorData.error ||
-        errorData.mensaje ||
-        (errorData._raw ? `Respuesta no JSON: ${errorData._raw.slice(0, 200)}` : "") ||
-        "sin respuesta del servidor";
-      throw new Error(`Error ${resultado.status}: ${detalle}`);
+    setGuardando(true);
+    try {
+      const resultado = await apiFetch("/evaluaciones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          solicitud_id: Number(solicitudId),
+          fecha_evaluacion: form.fechaEvaluacion,
+          resultado: form.resultado,
+          observaciones: form.observaciones,
+        }),
+      });
+      if (!resultado.ok) {
+        const errorData = await resultado.safeJson();
+        throw new Error(errorData.error || errorData.mensaje || "No se pudo guardar la evaluación.");
+      }
+      const evaluacion = evaluacionDesdeApi(await resultado.safeJson());
+      setEvaluaciones((prev) => [...prev.filter((e) => e.solicitudId !== evaluacion.solicitudId), evaluacion]);
+      setSolicitudes((prev) =>
+        prev.map((s) => (s.id === Number(solicitudId) ? { ...s, estado: "Finalizada" } : s))
+      );
+      return evaluacion;
+    } finally {
+      setGuardando(false);
     }
-    const evaluacion = evaluacionDesdeApi(await resultado.safeJson());
-    setEvaluaciones((prev) => [...prev.filter((e) => e.solicitudId !== evaluacion.solicitudId), evaluacion]);
-    setSolicitudes((prev) =>
-      prev.map((s) => (s.id === Number(solicitudId) ? { ...s, estado: "Finalizada" } : s))
-    );
-    return evaluacion;
   };
 
   const nombreCandidato = (candidatoId) => {
@@ -265,10 +289,12 @@ export function DataProvider({ children }) {
         solicitudes,
         evaluaciones,
         cargando,
+        guardando,
         error,
         limpiarError,
         agregarCandidato,
         editarCandidato,
+        eliminarCandidato,
         agregarSolicitud,
         avanzarEstado,
         obtenerSolicitud,

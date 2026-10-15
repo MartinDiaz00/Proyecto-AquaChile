@@ -4,9 +4,11 @@ import { useData } from "../context/DataContext";
 import { useToast } from "../context/ToastContext";
 
 function NuevaSolicitud() {
-  const { candidatos, agregarSolicitud } = useData();
+  const { candidatos, agregarSolicitud, guardando } = useData();
   const { mostrarToast } = useToast();
   const navigate = useNavigate();
+
+  const hoy = new Date().toISOString().slice(0, 10);
 
   const formVacio = {
     candidatoId: "",
@@ -15,7 +17,7 @@ function NuevaSolicitud() {
     familiaCargo: "",
     unidad: "",
     ceco: "",
-    fechaSolicitud: "",
+    fechaSolicitud: hoy,
     responsable: "",
     requiereReferencias: false,
     cvAdjunto: false,
@@ -39,6 +41,7 @@ function NuevaSolicitud() {
     if (!form.cargo.trim()) nuevosErrores.cargo = "El cargo es obligatorio";
     if (!form.familiaCargo.trim()) nuevosErrores.familiaCargo = "La familia de cargo es obligatoria";
     if (!form.fechaSolicitud) nuevosErrores.fechaSolicitud = "La fecha es obligatoria";
+    else if (form.fechaSolicitud < hoy) nuevosErrores.fechaSolicitud = "La fecha no puede ser anterior a hoy";
     if (!form.responsable.trim()) nuevosErrores.responsable = "El responsable es obligatorio";
     return nuevosErrores;
   };
@@ -58,6 +61,7 @@ function NuevaSolicitud() {
     } catch (error) {
       console.error("Error creando solicitud:", error);
       mostrarToast(`Error al crear solicitud: ${error.message}`, "error");
+    } finally {
       setEnviando(false);
     }
   };
@@ -208,6 +212,7 @@ function NuevaSolicitud() {
                   className={`form-control ${errores.fechaSolicitud ? "is-invalid" : ""}`}
                   value={form.fechaSolicitud}
                   onChange={manejarCambio}
+                  min={hoy}
                 />
                 {errores.fechaSolicitud && <div className="invalid-feedback">{errores.fechaSolicitud}</div>}
               </div>
@@ -274,7 +279,7 @@ function NuevaSolicitud() {
             </div>
 
             <div className="d-flex gap-2 mt-4 pt-2 border-top">
-              <button type="submit" className="btn btn-success" disabled={enviando}>
+              <button type="submit" className="btn btn-success" disabled={enviando || guardando}>
                 <i className="bi bi-send-fill me-1"></i>
                 {enviando ? "Enviando..." : "Enviar solicitud"}
               </button>

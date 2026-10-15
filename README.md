@@ -25,8 +25,9 @@ Los permisos son una propuesta coherente con los permisos simulados del MVP. El 
 
 ## 1. Configurar Neon
 1. Abre Neon y entra a SQL Editor.
-2. Copia y ejecuta el archivo `neon/01_roles_y_usuarios.sql`.
-3. Este script solo crea `roles_sistema` y `usuarios_sistema`; no elimina ni modifica `candidatos`, `solicitudes` o `evaluaciones`.
+2. Copia y ejecuta el archivo `neon/01_roles_y_usuarios.sql` (crea roles y usuarios del sistema).
+3. Copia y ejecuta el archivo `neon/02_tablas_principales.sql` (crea `candidatos`, `solicitudes` y `evaluaciones`).
+4. Ninguno de los scripts elimina ni modifica tablas existentes; solo crean si no existen.
 
 ## 2. Configurar backend
 En PowerShell, desde la carpeta raíz del proyecto:
