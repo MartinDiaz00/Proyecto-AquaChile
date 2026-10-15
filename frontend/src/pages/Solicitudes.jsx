@@ -205,6 +205,10 @@ function Solicitudes() {
       { s: { r: filaResumen - 1, c: 0 }, e: { r: filaResumen - 1, c: anchos.length - 1 } },
     ]);
 
+    // ===== DEFINIR RANGO DE DATOS (¡crítico para que Excel muestre algo!) =====
+    const ultimaColumna = String.fromCharCode(65 + anchos.length - 1); // A, B, C... hasta H
+    hoja["!ref"] = `A1:${ultimaColumna}${filaResumen}`;
+
     const libro = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(libro, hoja, "Solicitudes");
 
