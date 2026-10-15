@@ -60,7 +60,8 @@ function Candidatos() {
       cerrarFormulario();
     } catch (error) {
       console.error("Error al guardar candidato:", error);
-      mostrarToast(`Error: ${error.message}`, "error");
+      // Mostrar mensaje detallado para facilitar depuración
+      mostrarToast(`Error al guardar: ${error.message}`, "error");
     } finally {
       setEnviando(false);
     }

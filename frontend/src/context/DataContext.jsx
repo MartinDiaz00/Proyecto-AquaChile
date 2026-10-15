@@ -131,24 +131,34 @@ export function DataProvider({ children }) {
   };
 
   const editarCandidato = async (id, form) => {
+    if (!Number.isInteger(id) || id < 1) {
+      throw new Error("ID de candidato inválido.");
+    }
+
     setGuardando(true);
     try {
       const resultado = await apiFetch(`/candidatos/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nombre: form.nombre,
-          correo: form.correo,
-          telefono: form.telefono,
-          cargo_postulado: form.cargoPostulado,
-          familia_cargo: form.familiaCargo,
+          nombre: String(form.nombre || "").trim(),
+          correo: String(form.correo || "").trim(),
+          telefono: form.telefono ? String(form.telefono).trim() : null,
+          cargo_postulado: String(form.cargoPostulado || "").trim(),
+          familia_cargo: String(form.familiaCargo || "").trim(),
         }),
       });
+
       if (!resultado.ok) {
         const errorData = await resultado.safeJson();
-        const detalle = errorData.error || errorData.mensaje || "sin respuesta del servidor";
+        const detalle =
+          errorData.error ||
+          errorData.mensaje ||
+          (errorData._raw ? `Respuesta inesperada: ${errorData._raw.slice(0, 200)}` : "") ||
+          "sin respuesta del servidor";
         throw new Error(`Error ${resultado.status}: ${detalle}`);
       }
+
       const actualizado = candidatoDesdeApi(await resultado.safeJson());
       setCandidatos((prev) => prev.map((c) => (c.id === id ? actualizado : c)));
       return actualizado;

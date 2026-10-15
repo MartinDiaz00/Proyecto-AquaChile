@@ -36,16 +36,61 @@ function Solicitudes() {
     .filter((s) => !filtroFecha || s.fechaSolicitud === filtroFecha);
 
   const exportarAExcel = () => {
-    const COLOR_TITULO = "081B2E";   // azul profundo marca
+    const COLOR_TITULO = "081B2E";    // azul profundo marca AquaChile
     const COLOR_ENCABEZADO = "1F9D96"; // turquesa marca
-    const COLOR_FILA_ALTERNA = "E6F5F4"; // turquesa suave
-    const COLOR_BORDE = "B0C4D9";
+    const COLOR_FILA_ALTERNA = "E6F5F4"; // turquesa muy suave
+    const COLOR_BORDE = "9FB3C8";
 
-    const estadoColor = (estado) => {
-      if (estado === "Pendiente") return "FFF3CD";   // amarillo suave
-      if (estado === "En proceso") return "D1ECF1";  // azul suave
-      if (estado === "Finalizada") return "D4EDDA";  // verde suave
-      return "E2E3E5";
+    const estiloCelda = (valor, esEncabezado = false, esEstado = false, indiceFila = 0) => {
+      const esNumero = typeof valor === "number";
+      let colorTexto = esEncabezado ? "FFFFFFFF" : COLOR_TITULO;
+      let fondo = esEncabezado
+        ? COLOR_ENCABEZADO
+        : indiceFila % 2 === 0
+          ? COLOR_FILA_ALTERNA
+          : "FFFFFF";
+
+      // Colores por estado (muy intensos y legibles)
+      if (esEstado) {
+        if (valor === "Pendiente") {
+          fondo = "FFF2CC";  // amarillo claro
+          colorTexto = "7F6000"; // texto oscuro para contraste
+        } else if (valor === "En proceso") {
+          fondo = "DDEBF7";  // azul claro
+          colorTexto = "1F4E79";
+        } else if (valor === "Finalizada") {
+          fondo = "E2EFDA";  // verde claro
+          colorTexto = "375623";
+        } else {
+          fondo = "F2F2F2";
+          colorTexto = "595959";
+        }
+      }
+
+      return {
+        t: esNumero ? "n" : "s",
+        v: valor,
+        s: {
+          font: {
+            name: "Calibri",
+            sz: 11,
+            bold: esEncabezado || esEstado,
+            color: { rgb: colorTexto },
+          },
+          alignment: {
+            horizontal: esEncabezado || esNumero ? "center" : "left",
+            vertical: "center",
+            wrapText: true,
+          },
+          border: {
+            top: { style: "thin", color: { rgb: COLOR_BORDE } },
+            bottom: { style: "thin", color: { rgb: COLOR_BORDE } },
+            left: { style: "thin", color: { rgb: COLOR_BORDE } },
+            right: { style: "thin", color: { rgb: COLOR_BORDE } },
+          },
+          fill: { patternType: "solid", fgColor: { rgb: fondo } },
+        },
+      };
     };
 
     const datosExportar = solicitudesFiltradas.map((s) => ({
@@ -61,69 +106,31 @@ function Solicitudes() {
 
     const hoja = XLSX.utils.json_to_sheet(datosExportar, { skipHeader: true });
 
-    // Anchos de columna amigables
-    const anchos = [8, 28, 22, 20, 14, 16, 22, 40];
+    // Anchos de columna optimizados
+    const anchos = [7, 26, 22, 20, 14, 15, 24, 45];
     hoja["!cols"] = anchos.map((w) => ({ wch: w }));
 
-    // Congelar encabezados (fila 1 en adelante, dato empieza en fila 4)
+    // Congelar encabezados para que siempre se vean al bajar
     hoja["!freeze"] = "A4";
 
-    const coloresEstado = {
-      Pendiente: "FFF3CD",
-      "En proceso": "D1ECF1",
-      Finalizada: "D4EDDA",
-    };
-
-    const estiloCelda = (valor, esEncabezado = false, esEstado = false, indiceFila = 0) => ({
-      t: typeof valor === "number" ? "n" : "s",
-      v: valor,
-      s: {
-        font: {
-          name: "Calibri",
-          sz: 11,
-          bold: esEncabezado,
-          color: { rgb: esEncabezado ? "FFFFFFFF" : COLOR_TITULO },
-        },
-        alignment: {
-          horizontal: esEncabezado ? "center" : "left",
-          vertical: "center",
-          wrapText: true,
-        },
-        border: {
-          top: { style: "thin", color: { rgb: COLOR_BORDE } },
-          bottom: { style: "thin", color: { rgb: COLOR_BORDE } },
-          left: { style: "thin", color: { rgb: COLOR_BORDE } },
-          right: { style: "thin", color: { rgb: COLOR_BORDE } },
-        },
-        fill: esEncabezado
-          ? { patternType: "solid", fgColor: { rgb: COLOR_ENCABEZADO } }
-          : indiceFila % 2 === 0
-            ? { patternType: "solid", fgColor: { rgb: COLOR_FILA_ALTERNA } }
-            : { patternType: "solid", fgColor: { rgb: "FFFFFFFF" } },
-        ...(esEstado
-          ? { fill: { patternType: "solid", fgColor: { rgb: coloresEstado[valor] || "E2E3E5" } } }
-          : {}),
-      },
-    });
-
-    // Fila 1: Título principal (combinado)
+    // ===== FILA 1: Título principal =====
     hoja["A1"] = {
       t: "s",
       v: "SGP Psicolaboral — AquaChile",
       s: {
-        font: { name: "Calibri", sz: 16, bold: true, color: { rgb: "FFFFFFFF" } },
+        font: { name: "Calibri", sz: 18, bold: true, color: { rgb: "FFFFFFFF" } },
         fill: { patternType: "solid", fgColor: { rgb: COLOR_TITULO } },
         alignment: { horizontal: "center", vertical: "center" },
       },
     };
     hoja["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: anchos.length - 1 } }];
 
-    // Fila 2: Subtítulo
+    // ===== FILA 2: Subtítulo =====
     hoja["A2"] = {
       t: "s",
       v: "Reporte de Solicitudes de Evaluación Psicolaboral",
       s: {
-        font: { name: "Calibri", sz: 12, bold: true, color: { rgb: COLOR_TITULO } },
+        font: { name: "Calibri", sz: 13, bold: true, color: { rgb: COLOR_TITULO } },
         fill: { patternType: "solid", fgColor: { rgb: COLOR_FILA_ALTERNA } },
         alignment: { horizontal: "center", vertical: "center" },
       },
@@ -132,7 +139,7 @@ function Solicitudes() {
       { s: { r: 1, c: 0 }, e: { r: 1, c: anchos.length - 1 } },
     ]);
 
-    // Fila 3: Fecha de exportación
+    // ===== FILA 3: Fecha de exportación =====
     const fechaExport = new Date().toLocaleDateString("es-CL", {
       day: "2-digit",
       month: "2-digit",
@@ -152,14 +159,14 @@ function Solicitudes() {
       { s: { r: 2, c: 0 }, e: { r: 2, c: anchos.length - 1 } },
     ]);
 
-    // Fila 4: Encabezados de columnas
+    // ===== FILA 4: Encabezados de columnas =====
     const encabezados = Object.keys(datosExportar[0] || {});
     encabezados.forEach((col, idx) => {
       const celdaRef = XLSX.utils.encode_cell({ r: 3, c: idx });
       hoja[celdaRef] = estiloCelda(col, true);
     });
 
-    // Filas de datos (empiezan en fila 5, índice 4)
+    // ===== FILAS DE DATOS (empiezan en fila 5, índice 4) =====
     datosExportar.forEach((fila, fIdx) => {
       Object.entries(fila).forEach(([col, valor], cIdx) => {
         const celdaRef = XLSX.utils.encode_cell({ r: 4 + fIdx, c: cIdx });
@@ -167,6 +174,25 @@ function Solicitudes() {
         hoja[celdaRef] = estiloCelda(valor, false, esEstado, fIdx);
       });
     });
+
+    // ===== FILA RESUMEN (última fila) =====
+    const filaResumen = 4 + datosExportar.length;
+    const totalFinalizadas = datosExportar.filter((s) => s.Estado === "Finalizada").length;
+    const totalPendientes = datosExportar.filter((s) => s.Estado === "Pendiente").length;
+    const totalEnProceso = datosExportar.filter((s) => s.Estado === "En proceso").length;
+
+    hoja[`A${filaResumen}`] = {
+      t: "s",
+      v: `Total: ${datosExportar.length} solicitudes | Pendientes: ${totalPendientes} | En proceso: ${totalEnProceso} | Finalizadas: ${totalFinalizadas}`,
+      s: {
+        font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFFFFFFF" } },
+        fill: { patternType: "solid", fgColor: { rgb: COLOR_ENCABEZADO } },
+        alignment: { horizontal: "left", vertical: "center" },
+      },
+    };
+    hoja["!merges"] = (hoja["!merges"] || []).concat([
+      { s: { r: filaResumen - 1, c: 0 }, e: { r: filaResumen - 1, c: anchos.length - 1 } },
+    ]);
 
     const libro = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(libro, hoja, "Solicitudes");
