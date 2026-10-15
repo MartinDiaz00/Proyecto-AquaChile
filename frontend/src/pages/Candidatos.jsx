@@ -244,7 +244,7 @@ function Candidatos() {
                   )}
                   {permisos.candidatos && (
                     <button className="btn btn-sm btn-outline-danger" onClick={() => confirmarEliminar(c.id, c.nombre)} disabled={eliminandoId === c.id}>
-                      {eliminandoId === c.id ? "Eliminando..." : <i className="bi bi-trash-fill me-1"></i>Eliminar}
+                      {eliminandoId === c.id ? "Eliminando..." : (<><i className="bi bi-trash-fill me-1"></i>Eliminar</>)}
                     </button>
                   )}
                 </td>
