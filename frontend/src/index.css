@@ -79,3 +79,339 @@ body {
   --bs-breadcrumb-divider-color: rgba(255, 255, 255, 0.45);
   --bs-breadcrumb-item-active-color: #ffffff;
 }
+
+/* ===== ESTILOS PÁGINA CANDIDATOS ===== */
+
+.candidatos-header {
+  background: linear-gradient(135deg, var(--azul-profundo) 0%, var(--azul-noche) 55%, var(--turquesa) 100%);
+  border-radius: 16px;
+  padding: 1.75rem 1.5rem;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(8, 27, 46, 0.35);
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.candidatos-header h2 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.candidatos-header p {
+  margin: 0.35rem 0 0;
+  opacity: 0.85;
+  font-size: 0.95rem;
+}
+
+.btn-accion-candidato {
+  background: linear-gradient(135deg, var(--turquesa) 0%, #14b8a6 100%);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 0.6rem 1.4rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(31, 157, 150, 0.35);
+}
+
+.btn-accion-candidato:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(31, 157, 150, 0.5);
+  color: #fff;
+}
+
+.btn-accion-candidato:active {
+  transform: translateY(0);
+}
+
+.btn-accion-candidato:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-eliminar-candidato {
+  background: linear-gradient(135deg, var(--salmon-acento) 0%, #e56b45 100%);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 0.5rem 1.1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(232, 115, 79, 0.35);
+}
+
+.btn-eliminar-candidato:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(232, 115, 79, 0.5);
+  color: #fff;
+}
+
+/* Tarjetas de candidatos */
+.candidato-card {
+  background: #fff;
+  border: 1px solid #e3e8ee;
+  border-radius: 14px;
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 1rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 3px 10px rgba(8, 27, 46, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.candidato-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--turquesa) 0%, var(--azul-medio) 100%);
+}
+
+.candidato-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(8, 27, 46, 0.12);
+  border-color: var(--turquesa);
+}
+
+.candidato-card h5 {
+  margin: 0 0 0.35rem;
+  color: var(--azul-profundo);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.candidato-card .badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  border-radius: 20px;
+}
+
+.candidato-card .familia-chip {
+  display: inline-block;
+  background: var(--turquesa-suave);
+  color: var(--azul-medio);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  margin-top: 0.2rem;
+  border: 1px solid #bfe3e0;
+}
+
+.candidato-detalle {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  color: #5a6b7b;
+  font-size: 0.88rem;
+  margin-top: 0.5rem;
+}
+
+.candidato-detalle i {
+  color: var(--azul-medio);
+  width: 18px;
+  text-align: center;
+}
+
+.acciones-card {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.candidato-card:hover .acciones-card {
+  opacity: 1;
+}
+
+.btn-accion-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  color: #fff;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.btn-editar-sm {
+  background: linear-gradient(135deg, var(--azul-medio) 0%, #0e4a7a 100%);
+  box-shadow: 0 3px 8px rgba(16, 89, 140, 0.35);
+}
+
+.btn-editar-sm:hover {
+  transform: scale(1.08);
+  box-shadow: 0 5px 14px rgba(16, 89, 140, 0.5);
+}
+
+.btn-eliminar-sm {
+  background: linear-gradient(135deg, var(--salmon-acento) 0%, #d95f3f 100%);
+  box-shadow: 0 3px 8px rgba(232, 115, 79, 0.35);
+}
+
+.btn-eliminar-sm:hover {
+  transform: scale(1.08);
+  box-shadow: 0 5px 14px rgba(232, 115, 79, 0.5);
+}
+
+/* Formulario candidato */
+.form-card {
+  background: #fff;
+  border: 1px solid #e3e8ee;
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 8px 24px rgba(8, 27, 46, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.form-card h6 {
+  color: var(--azul-profundo);
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.form-card h6 i {
+  color: var(--turquesa);
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--texto-oscuro);
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+.form-control {
+  border: 2px solid #e3e8ee;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background: #fbfcfd;
+}
+
+.form-control:focus {
+  border-color: var(--turquesa);
+  box-shadow: 0 0 0 4px rgba(31, 157, 150, 0.15);
+  background: #fff;
+}
+
+.form-select {
+  border: 2px solid #e3e8ee;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  background: #fbfcfd;
+  transition: all 0.2s ease;
+}
+
+.form-select:focus {
+  border-color: var(--turquesa);
+  box-shadow: 0 0 0 4px rgba(31, 157, 150, 0.15);
+}
+
+.invalid-feedback {
+  color: var(--salmon-acento);
+  font-size: 0.82rem;
+  margin-top: 0.35rem;
+  font-weight: 500;
+}
+
+.is-invalid {
+  border-color: var(--salmon-acento) !important;
+}
+
+.btn-guardar-candidato {
+  background: linear-gradient(135deg, var(--turquesa) 0%, #14b8a6 100%);
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 0.8rem 1.75rem;
+  font-size: 1rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 16px rgba(31, 157, 150, 0.35);
+}
+
+.btn-guardar-candidato:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px rgba(31, 157, 150, 0.5);
+}
+
+.btn-guardar-candidato:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-guardar-candidato:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-cancelar-form {
+  background: #f1f5f9;
+  border: 2px solid #e2e8f0;
+  color: #475569;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 0.65rem 1.4rem;
+  transition: all 0.2s ease;
+}
+
+.btn-cancelar-form:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+/* Búsqueda */
+.busqueda-card {
+  background: #fff;
+  border: 1px solid #e3e8ee;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 3px 10px rgba(8, 27, 46, 0.06);
+  max-width: 420px;
+}
+
+/* Estado vacío */
+.estado-vacio {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.estado-vacio i {
+  font-size: 3rem;
+  color: #adb5bd;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.estado-vacio h3 {
+  color: var(--azul-profundo);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+/* Toast mejorado */
+.toast-item {
+  border-radius: 12px !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15) !important;
+}

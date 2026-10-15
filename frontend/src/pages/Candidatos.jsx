@@ -51,10 +51,10 @@ function Candidatos() {
     try {
       if (editandoId) {
         await editarCandidato(editandoId, form);
-        mostrarToast("Candidato actualizado correctamente");
+        mostrarToast("Candidato actualizado correctamente", "success");
       } else {
         await agregarCandidato(form);
-        mostrarToast("Candidato creado correctamente");
+        mostrarToast("Candidato creado correctamente", "success");
       }
 
       cerrarFormulario();
@@ -86,16 +86,18 @@ function Candidatos() {
   };
 
   const confirmarEliminar = async (id, nombre) => {
-    if (!window.confirm(`¿Estás seguro de que deseas eliminar al candidato "${nombre}"?\n\nEsta acción no se puede deshacer si el candidato tiene solicitudes asociadas.`)) {
-      return;
-    }
+    const seguro = window.confirm(
+      `¿Estás seguro de que deseas eliminar al candidato "${nombre}"?\n\nEsta acción no se puede deshacer si el candidato tiene solicitudes asociadas.`
+    );
+    if (!seguro) return;
+
     setEliminandoId(id);
     try {
       await eliminarCandidato(id);
-      mostrarToast("Candidato eliminado correctamente");
+      mostrarToast("Candidato eliminado correctamente", "success");
     } catch (error) {
       console.error("Error eliminando candidato:", error);
-      mostrarToast(`Error: ${error.message}`, "error");
+      mostrarToast(`Error al eliminar: ${error.message}`, "error");
     } finally {
       setEliminandoId(null);
     }
@@ -112,96 +114,128 @@ function Candidatos() {
 
   return (
     <div className="container mt-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="text-white">
-          <i className="bi bi-people-fill me-2"></i>Candidatos
-        </h2>
-        {permisos.candidatos && (
-          <button
-            className="btn btn-primary"
-            disabled={guardando}
-            onClick={() => (mostrarForm ? cerrarFormulario() : setMostrarForm(true))}
-          >
-            {mostrarForm ? "Cancelar" : "+ Nuevo candidato"}
-          </button>
-        )}
+      {/* Header con gradiente */}
+      <div className="candidatos-header">
+        <div className="d-flex justify-content-between align-items-center">
+          <div>
+            <h2>
+              <i className="bi bi-people-fill me-2"></i>Candidatos
+            </h2>
+            <p>Gestiona los candidatos para evaluación psicolaboral</p>
+          </div>
+          {permisos.candidatos && (
+            <button
+              className="btn-accion-candidato"
+              disabled={guardando}
+              onClick={() => (mostrarForm ? cerrarFormulario() : setMostrarForm(true))}
+            >
+              {mostrarForm ? "Cancelar" : "+ Nuevo candidato"}
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Formulario dentro de card */}
       {mostrarForm && (
-        <form className="card card-body mb-4 border-0 shadow-sm" onSubmit={manejarEnvio} noValidate>
-          <h6 className="text-muted mb-3">{editandoId ? "Editando candidato" : "Nuevo candidato"}</h6>
-          <div className="row g-3">
-            <div className="col-md-6">
-              <label className="form-label">Nombre</label>
-              <input
-                type="text"
-                name="nombre"
-                className={`form-control ${errores.nombre ? "is-invalid" : ""}`}
-                value={form.nombre}
-                onChange={manejarCambio}
-              />
-              {errores.nombre && <div className="invalid-feedback">{errores.nombre}</div>}
+        <div className="form-card">
+          <form onSubmit={manejarEnvio} noValidate>
+            <h6>
+              <i className="bi bi-person-plus-fill me-2"></i>
+              {editandoId ? "Editando candidato" : "Nuevo candidato"}
+            </h6>
+
+            <div className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label">Nombre completo</label>
+                <input
+                  type="text"
+                  name="nombre"
+                  className={`form-control ${errores.nombre ? "is-invalid" : ""}`}
+                  placeholder="Ej: Juan Pérez"
+                  value={form.nombre}
+                  onChange={manejarCambio}
+                  autoFocus
+                />
+                {errores.nombre && <div className="invalid-feedback">{errores.nombre}</div>}
+              </div>
+
+              <div className="col-md-6">
+                <label className="form-label">Correo electrónico</label>
+                <input
+                  type="email"
+                  name="correo"
+                  className={`form-control ${errores.correo ? "is-invalid" : ""}`}
+                  placeholder="Ej: juan@empresa.cl"
+                  value={form.correo}
+                  onChange={manejarCambio}
+                />
+                {errores.correo && <div className="invalid-feedback">{errores.correo}</div>}
+              </div>
+
+              <div className="col-md-6">
+                <label className="form-label">Teléfono</label>
+                <input
+                  type="text"
+                  name="telefono"
+                  className="form-control"
+                  placeholder="+56 9 1234 5678"
+                  value={form.telefono}
+                  onChange={manejarCambio}
+                />
+              </div>
+
+              <div className="col-md-6">
+                <label className="form-label">Cargo al que postula</label>
+                <input
+                  type="text"
+                  name="cargoPostulado"
+                  className={`form-control ${errores.cargoPostulado ? "is-invalid" : ""}`}
+                  placeholder="Ej: Analista de datos"
+                  value={form.cargoPostulado}
+                  onChange={manejarCambio}
+                />
+                {errores.cargoPostulado && <div className="invalid-feedback">{errores.cargoPostulado}</div>}
+              </div>
+
+              <div className="col-md-6">
+                <label className="form-label">Familia de cargo</label>
+                <select
+                  name="familiaCargo"
+                  className={`form-select ${errores.familiaCargo ? "is-invalid" : ""}`}
+                  value={form.familiaCargo}
+                  onChange={manejarCambio}
+                >
+                  <option value="">Selecciona una opción</option>
+                  {familiasCargo.map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+                {errores.familiaCargo && <div className="invalid-feedback">{errores.familiaCargo}</div>}
+              </div>
             </div>
 
-            <div className="col-md-6">
-              <label className="form-label">Correo</label>
-              <input
-                type="email"
-                name="correo"
-                className={`form-control ${errores.correo ? "is-invalid" : ""}`}
-                value={form.correo}
-                onChange={manejarCambio}
-              />
-              {errores.correo && <div className="invalid-feedback">{errores.correo}</div>}
-            </div>
-
-            <div className="col-md-6">
-              <label className="form-label">Teléfono</label>
-              <input
-                type="text"
-                name="telefono"
-                className="form-control"
-                value={form.telefono}
-                onChange={manejarCambio}
-              />
-            </div>
-
-            <div className="col-md-6">
-              <label className="form-label">Cargo al que postula</label>
-              <input
-                type="text"
-                name="cargoPostulado"
-                className={`form-control ${errores.cargoPostulado ? "is-invalid" : ""}`}
-                value={form.cargoPostulado}
-                onChange={manejarCambio}
-              />
-              {errores.cargoPostulado && <div className="invalid-feedback">{errores.cargoPostulado}</div>}
-            </div>
-
-            <div className="col-md-6">
-              <label className="form-label">Familia de cargo</label>
-              <select
-                name="familiaCargo"
-                className={`form-select ${errores.familiaCargo ? "is-invalid" : ""}`}
-                value={form.familiaCargo}
-                onChange={manejarCambio}
+            <div className="d-flex gap-2 mt-4 pt-3 border-top">
+              <button
+                type="submit"
+                className="btn-guardar-candidato flex-fill"
+                disabled={enviando || guardando}
               >
-                <option value="">Selecciona una opción</option>
-                {familiasCargo.map((f) => (
-                  <option key={f} value={f}>{f}</option>
-                ))}
-              </select>
-              {errores.familiaCargo && <div className="invalid-feedback">{errores.familiaCargo}</div>}
+                {enviando ? "Guardando..." : editandoId ? "Guardar cambios" : "Guardar candidato"}
+              </button>
+              <button
+                type="button"
+                className="btn-cancelar-form"
+                onClick={cerrarFormulario}
+              >
+                Cancelar
+              </button>
             </div>
-          </div>
-
-          <button type="submit" className="btn btn-success mt-3" disabled={enviando || guardando}>
-            {enviando ? "Guardando..." : editandoId ? "Guardar cambios" : "Guardar candidato"}
-          </button>
-        </form>
+          </form>
+        </div>
       )}
 
-      <div className="mb-3" style={{ maxWidth: "360px" }}>
+      {/* Búsqueda */}
+      <div className="busqueda-card">
         <div className="input-group">
           <span className="input-group-text bg-white border-end-0">
             <i className="bi bi-search text-muted"></i>
@@ -216,51 +250,71 @@ function Candidatos() {
         </div>
       </div>
 
-      <div className="table-responsive">
-        <table className="table table-hover align-middle">
-          <thead className="table-light">
-            <tr>
-              <th>Nombre</th>
-              <th>Correo</th>
-              <th>Teléfono</th>
-              <th>Cargo postulado</th>
-              <th>Familia de cargo</th>
-              <th className="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {candidatosFiltrados.map((c) => (
-              <tr key={c.id}>
-                <td>{c.nombre}</td>
-                <td>{c.correo}</td>
-                <td>{c.telefono || "—"}</td>
-                <td>{c.cargoPostulado}</td>
-                <td>{c.familiaCargo}</td>
-                <td className="text-end d-flex justify-content-end gap-2">
+      {/* Lista de candidatos como tarjetas */}
+      {candidatosFiltrados.length === 0 ? (
+        <div className="estado-vacio">
+          <i className="bi bi-inbox"></i>
+          <h3>{candidatos.length === 0 ? "Aún no hay candidatos registrados." : "Ningún candidato coincide con la búsqueda."}</h3>
+          {candidatos.length === 0 && permisos.candidatos && (
+            <p className="mt-2 text-muted">Usa el botón <strong>"+ Nuevo candidato"</strong> para agregar uno.</p>
+          )}
+        </div>
+      ) : (
+        <div className="row g-3">
+          {candidatosFiltrados.map((c) => (
+            <div className="col-md-6 col-lg-4" key={c.id}>
+              <div className="candidato-card">
+                <div className="acciones-card">
                   {permisos.candidatos && (
-                    <button className="btn btn-sm btn-outline-primary" onClick={() => empezarEdicion(c)}>
-                      <i className="bi bi-pencil-fill me-1"></i>Editar
-                    </button>
+                    <>
+                      <button
+                        className="btn-accion-sm btn-editar-sm"
+                        onClick={() => empezarEdicion(c)}
+                        title="Editar candidato"
+                      >
+                        <i className="bi bi-pencil-fill"></i>
+                      </button>
+                      <button
+                        className="btn-accion-sm btn-eliminar-sm"
+                        onClick={() => confirmarEliminar(c.id, c.nombre)}
+                        disabled={eliminandoId === c.id}
+                        title={eliminandoId === c.id ? "Eliminando..." : "Eliminar candidato"}
+                      >
+                        {eliminandoId === c.id ? (
+                          <i className="bi bi-arrow-repeat" style={{ animation: "spin 1s linear infinite" }}></i>
+                        ) : (
+                          <i className="bi bi-trash-fill"></i>
+                        )}
+                      </button>
+                    </>
                   )}
-                  {permisos.candidatos && (
-                    <button className="btn btn-sm btn-outline-danger" onClick={() => confirmarEliminar(c.id, c.nombre)} disabled={eliminandoId === c.id}>
-                      {eliminandoId === c.id ? "Eliminando..." : (<><i className="bi bi-trash-fill me-1"></i>Eliminar</>)}
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {candidatosFiltrados.length === 0 && (
-              <tr>
-                <td colSpan="6" className="text-center text-muted py-4">
-                  <i className="bi bi-inbox fs-3 d-block mb-2"></i>
-                  {candidatos.length === 0 ? "Aún no hay candidatos registrados." : "Ningún candidato coincide con la búsqueda."}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                </div>
+
+                <h5>{c.nombre}</h5>
+
+                <div className="candidato-detalle">
+                  <i className="bi bi-envelope-fill"></i>
+                  <span>{c.correo}</span>
+                </div>
+
+                <div className="candidato-detalle">
+                  <i className="bi bi-telephone-fill"></i>
+                  <span>{c.telefono || "—"}</span>
+                </div>
+
+                <div className="candidato-detalle">
+                  <i className="bi bi-briefcase-fill"></i>
+                  <span>{c.cargoPostulado}</span>
+                </div>
+
+                <span className="familia-chip">
+                  {c.familiaCargo}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
