@@ -41,30 +41,34 @@ function Solicitudes() {
     const COLOR_FILA_ALTERNA = "E6F5F4"; // turquesa muy suave
     const COLOR_BORDE = "9FB3C8";
 
-    const estiloCelda = (valor, esEncabezado = false, esEstado = false, indiceFila = 0) => {
-      const esNumero = typeof valor === "number";
-      let colorTexto = esEncabezado ? "FFFFFFFF" : COLOR_TITULO;
+    const estilosEstado = {
+      Pendiente: { fondo: "FFF2CC", texto: "7F6000" },   // amarillo
+      "En proceso": { fondo: "DDEBF7", texto: "1F4E79" }, // azul
+      Finalizada: { fondo: "E2EFDA", texto: "375623" },   // verde
+    };
+
+    const crearCelda = (valor, opciones = {}) => {
+      const {
+        esEncabezado = false,
+        esEstado = false,
+        indiceFila = 0,
+        esNumero = false,
+        esResumen = false,
+      } = opciones;
+
+      let colorTexto = esEncabezado ? "FFFFFFFF" : esResumen ? "FFFFFFFF" : COLOR_TITULO;
       let fondo = esEncabezado
         ? COLOR_ENCABEZADO
-        : indiceFila % 2 === 0
-          ? COLOR_FILA_ALTERNA
-          : "FFFFFF";
+        : esResumen
+          ? COLOR_ENCABEZADO
+          : indiceFila % 2 === 0
+            ? COLOR_FILA_ALTERNA
+            : "FFFFFF";
 
-      // Colores por estado (muy intensos y legibles)
-      if (esEstado) {
-        if (valor === "Pendiente") {
-          fondo = "FFF2CC";  // amarillo claro
-          colorTexto = "7F6000"; // texto oscuro para contraste
-        } else if (valor === "En proceso") {
-          fondo = "DDEBF7";  // azul claro
-          colorTexto = "1F4E79";
-        } else if (valor === "Finalizada") {
-          fondo = "E2EFDA";  // verde claro
-          colorTexto = "375623";
-        } else {
-          fondo = "F2F2F2";
-          colorTexto = "595959";
-        }
+      // Colores por estado (fuertes y legibles)
+      if (esEstado && estilosEstado[valor]) {
+        fondo = estilosEstado[valor].fondo;
+        colorTexto = estilosEstado[valor].texto;
       }
 
       return {
@@ -74,11 +78,11 @@ function Solicitudes() {
           font: {
             name: "Calibri",
             sz: 11,
-            bold: esEncabezado || esEstado,
+            bold: esEncabezado || esEstado || esResumen,
             color: { rgb: colorTexto },
           },
           alignment: {
-            horizontal: esEncabezado || esNumero ? "center" : "left",
+            horizontal: esEncabezado || esNumero || esResumen ? "center" : "left",
             vertical: "center",
             wrapText: true,
           },
@@ -93,6 +97,75 @@ function Solicitudes() {
       };
     };
 
+    const hoja = {};
+
+    // Anchos de columna optimizados
+    const anchos = [7, 26, 22, 20, 14, 15, 24, 45];
+    hoja["!cols"] = anchos.map((w) => ({ wch: w }));
+
+    // Congelar encabezados (fila 4 en adelante)
+    hoja["!freeze"] = "A4";
+
+    const encabezados = [
+      "Nº",
+      "Candidato",
+      "Cargo",
+      "Familia de cargo",
+      "Fecha solicitud",
+      "Estado",
+      "Responsable",
+      "Aspectos a Indagar",
+    ];
+
+    // ===== FILA 1: Título principal (mergeado A1:H1) =====
+    hoja["A1"] = crearCelda("SGP Psicolaboral — AquaChile", {
+      esEncabezado: true,
+      esNumero: false,
+    });
+    Object.assign(hoja["A1"].s, {
+      font: { name: "Calibri", sz: 18, bold: true, color: { rgb: "FFFFFFFF" } },
+    });
+    hoja["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: anchos.length - 1 } }];
+
+    // ===== FILA 2: Subtítulo (mergeado A2:H2) =====
+    hoja["A2"] = crearCelda("Reporte de Solicitudes de Evaluación Psicolaboral", {
+      esEncabezado: false,
+      esNumero: false,
+    });
+    Object.assign(hoja["A2"].s, {
+      font: { name: "Calibri", sz: 13, bold: true, color: { rgb: COLOR_TITULO } },
+      fill: { patternType: "solid", fgColor: { rgb: COLOR_FILA_ALTERNA } },
+    });
+    hoja["!merges"] = (hoja["!merges"] || []).concat([
+      { s: { r: 1, c: 0 }, e: { r: 1, c: anchos.length - 1 } },
+    ]);
+
+    // ===== FILA 3: Fecha de exportación (mergeado A3:H3) =====
+    const fechaExport = new Date().toLocaleDateString("es-CL", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    hoja["A3"] = crearCelda(`Generado el ${fechaExport}`, {
+      esEncabezado: false,
+      esNumero: false,
+    });
+    Object.assign(hoja["A3"].s, {
+      font: { name: "Calibri", sz: 10, italic: true, color: { rgb: "6C757D" } },
+    });
+    hoja["!merges"] = (hoja["!merges"] || []).concat([
+      { s: { r: 2, c: 0 }, e: { r: 2, c: anchos.length - 1 } },
+    ]);
+
+    // ===== FILA 4: Encabezados de columnas =====
+    encabezados.forEach((col, idx) => {
+      const celdaRef = XLSX.utils.encode_cell({ r: 3, c: idx });
+      hoja[celdaRef] = crearCelda(col, { esEncabezado: true });
+    });
+
+    // ===== FILAS DE DATOS (empiezan en fila 5, índice 4) =====
     const datosExportar = solicitudesFiltradas.map((s) => ({
       "Nº": s.id,
       Candidato: nombreCandidato(s.candidatoId),
@@ -104,74 +177,17 @@ function Solicitudes() {
       "Aspectos a Indagar": s.aspectosIndagar || "",
     }));
 
-    const hoja = XLSX.utils.json_to_sheet(datosExportar, { skipHeader: true, origin: "A5" });
-
-    // Anchos de columna optimizados
-    const anchos = [7, 26, 22, 20, 14, 15, 24, 45];
-    hoja["!cols"] = anchos.map((w) => ({ wch: w }));
-
-    // Congelar encabezados para que siempre se vean al bajar
-    hoja["!freeze"] = "A4";
-
-    // ===== FILA 1: Título principal =====
-    hoja["A1"] = {
-      t: "s",
-      v: "SGP Psicolaboral — AquaChile",
-      s: {
-        font: { name: "Calibri", sz: 18, bold: true, color: { rgb: "FFFFFFFF" } },
-        fill: { patternType: "solid", fgColor: { rgb: COLOR_TITULO } },
-        alignment: { horizontal: "center", vertical: "center" },
-      },
-    };
-    hoja["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: anchos.length - 1 } }];
-
-    // ===== FILA 2: Subtítulo =====
-    hoja["A2"] = {
-      t: "s",
-      v: "Reporte de Solicitudes de Evaluación Psicolaboral",
-      s: {
-        font: { name: "Calibri", sz: 13, bold: true, color: { rgb: COLOR_TITULO } },
-        fill: { patternType: "solid", fgColor: { rgb: COLOR_FILA_ALTERNA } },
-        alignment: { horizontal: "center", vertical: "center" },
-      },
-    };
-    hoja["!merges"] = (hoja["!merges"] || []).concat([
-      { s: { r: 1, c: 0 }, e: { r: 1, c: anchos.length - 1 } },
-    ]);
-
-    // ===== FILA 3: Fecha de exportación =====
-    const fechaExport = new Date().toLocaleDateString("es-CL", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    hoja["A3"] = {
-      t: "s",
-      v: `Generado el ${fechaExport}`,
-      s: {
-        font: { name: "Calibri", sz: 10, italic: true, color: { rgb: "6C757D" } },
-        alignment: { horizontal: "center", vertical: "center" },
-      },
-    };
-    hoja["!merges"] = (hoja["!merges"] || []).concat([
-      { s: { r: 2, c: 0 }, e: { r: 2, c: anchos.length - 1 } },
-    ]);
-
-    // ===== FILA 4: Encabezados de columnas =====
-    const encabezados = Object.keys(datosExportar[0] || {});
-    encabezados.forEach((col, idx) => {
-      const celdaRef = XLSX.utils.encode_cell({ r: 3, c: idx });
-      hoja[celdaRef] = estiloCelda(col, true);
-    });
-
-    // ===== FILAS DE DATOS (empiezan en fila 5, índice 4) =====
     datosExportar.forEach((fila, fIdx) => {
-      Object.entries(fila).forEach(([col, valor], cIdx) => {
-        const celdaRef = XLSX.utils.encode_cell({ r: 4 + fIdx, c: cIdx });
+      encabezados.forEach((col, cIdx) => {
+        const valor = fila[col];
+        const esNumero = col === "Nº";
         const esEstado = col === "Estado";
-        hoja[celdaRef] = estiloCelda(valor, false, esEstado, fIdx);
+        const celdaRef = XLSX.utils.encode_cell({ r: 4 + fIdx, c: cIdx });
+        hoja[celdaRef] = crearCelda(valor, {
+          esNumero,
+          esEstado,
+          indiceFila: fIdx,
+        });
       });
     });
 
@@ -181,15 +197,10 @@ function Solicitudes() {
     const totalPendientes = datosExportar.filter((s) => s.Estado === "Pendiente").length;
     const totalEnProceso = datosExportar.filter((s) => s.Estado === "En proceso").length;
 
-    hoja[`A${filaResumen}`] = {
-      t: "s",
-      v: `Total: ${datosExportar.length} solicitudes | Pendientes: ${totalPendientes} | En proceso: ${totalEnProceso} | Finalizadas: ${totalFinalizadas}`,
-      s: {
-        font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFFFFFFF" } },
-        fill: { patternType: "solid", fgColor: { rgb: COLOR_ENCABEZADO } },
-        alignment: { horizontal: "left", vertical: "center" },
-      },
-    };
+    hoja[`A${filaResumen}`] = crearCelda(
+      `Total: ${datosExportar.length} solicitudes | Pendientes: ${totalPendientes} | En proceso: ${totalEnProceso} | Finalizadas: ${totalFinalizadas}`,
+      { esResumen: true }
+    );
     hoja["!merges"] = (hoja["!merges"] || []).concat([
       { s: { r: filaResumen - 1, c: 0 }, e: { r: filaResumen - 1, c: anchos.length - 1 } },
     ]);
