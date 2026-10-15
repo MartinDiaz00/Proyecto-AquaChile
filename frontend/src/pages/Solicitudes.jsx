@@ -104,7 +104,7 @@ function Solicitudes() {
       "Aspectos a Indagar": s.aspectosIndagar || "",
     }));
 
-    const hoja = XLSX.utils.json_to_sheet(datosExportar, { skipHeader: true });
+    const hoja = XLSX.utils.json_to_sheet(datosExportar, { skipHeader: true, origin: "A5" });
 
     // Anchos de columna optimizados
     const anchos = [7, 26, 22, 20, 14, 15, 24, 45];

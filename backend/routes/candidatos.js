@@ -70,18 +70,35 @@ router.put("/:id", requireRole(...EDITORES), async (req, res) => {
       return res.status(404).json({ error: "Candidato no encontrado." });
     }
 
-    const resultado = await pool.query(
-      `UPDATE candidatos
-       SET nombre = $1, correo = $2, telefono = $3, cargo_postulado = $4, familia_cargo = $5,
-           actualizado_en = NOW()
-       WHERE id = $6 RETURNING *`,
-      [String(nombre).trim(), String(correo).trim(), telefono || null,
-       String(cargo_postulado).trim(), String(familia_cargo).trim(), id]
-    );
-    res.json(resultado.rows[0]);
+    // Intentar actualizar con actualizado_en (si la columna existe)
+    try {
+      const resultado = await pool.query(
+        `UPDATE candidatos
+         SET nombre = $1, correo = $2, telefono = $3, cargo_postulado = $4, familia_cargo = $5,
+             actualizado_en = NOW()
+         WHERE id = $6 RETURNING *`,
+        [String(nombre).trim(), String(correo).trim(), telefono || null,
+         String(cargo_postulado).trim(), String(familia_cargo).trim(), id]
+      );
+      res.json(resultado.rows[0]);
+    } catch (updateError) {
+      // Si falla por columna actualizado_en inexistente, reintentar sin ella
+      if (updateError.code === "42703" || updateError.message.includes("actualizado_en")) {
+        const resultado = await pool.query(
+          `UPDATE candidatos
+           SET nombre = $1, correo = $2, telefono = $3, cargo_postulado = $4, familia_cargo = $5
+           WHERE id = $6 RETURNING *`,
+          [String(nombre).trim(), String(correo).trim(), telefono || null,
+           String(cargo_postulado).trim(), String(familia_cargo).trim(), id]
+        );
+        res.json(resultado.rows[0]);
+      } else {
+        throw updateError;
+      }
+    }
   } catch (error) {
     console.error("Error actualizando candidato:", error);
-    res.status(500).json({ error: "No se pudo actualizar el candidato." });
+    res.status(500).json({ error: "No se pudo actualizar el candidato. Verifica que la tabla candidatos exista en Neon." });
   }
 });
 
@@ -98,7 +115,9 @@ router.delete("/:id", requireRole("Administrador académico"), async (req, res) 
     // Verificar que no tenga solicitudes asociadas
     const solicitudes = await pool.query("SELECT id FROM solicitudes WHERE candidato_id = $1 LIMIT 1", [id]);
     if (solicitudes.rows.length > 0) {
-      return res.status(400).json({ error: "No se puede eliminar: el candidato tiene solicitudes asociadas." });
+      return res.status(400).json({
+        error: "No se puede eliminar: el candidato tiene solicitudes de evaluación asociadas. Primero elimina esas solicitudes o edita al candidato en su lugar."
+      });
     }
 
     await pool.query("DELETE FROM candidatos WHERE id = $1", [id]);
