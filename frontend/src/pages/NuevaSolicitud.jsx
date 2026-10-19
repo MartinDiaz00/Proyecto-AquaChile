@@ -8,7 +8,14 @@ function NuevaSolicitud() {
   const { mostrarToast } = useToast();
   const navigate = useNavigate();
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  // Fecha local (no UTC): en Chile después de las 21:00 el toISOString() ya
+  // devuelve el día siguiente y el formulario aceptaría fechas equivocadas.
+  const hoy = (() => {
+    const ahora = new Date();
+    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
+    const dia = String(ahora.getDate()).padStart(2, "0");
+    return `${ahora.getFullYear()}-${mes}-${dia}`;
+  })();
 
   const formVacio = {
     candidatoId: "",

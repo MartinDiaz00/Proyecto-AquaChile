@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("../db");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
+const { sanearTexto, excedeLargo, mensajeExcedeLargo, esCorreoValido } = require("../utils/texto");
 
 const router = express.Router();
 const ROLES = [
@@ -80,12 +81,20 @@ router.get("/usuarios", authenticateToken, requireRole("Administrador académico
 
 router.post("/usuarios", authenticateToken, requireRole("Administrador académico"), async (req, res) => {
   try {
-    const nombre = String(req.body.nombre || "").trim();
+    const nombreSaneado = sanearTexto(req.body.nombre, { campo: "el nombre", requerido: true });
+    if (nombreSaneado.error) return res.status(400).json({ mensaje: nombreSaneado.error });
+
     const email = String(req.body.email || "").trim().toLowerCase();
     const password = String(req.body.password || "");
     const rol = String(req.body.rol || "").trim();
 
-    if (nombre.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (nombreSaneado.valor.length < 2) {
+      return res.status(400).json({ mensaje: "Ingresa un nombre y correo válidos." });
+    }
+    if (excedeLargo(nombreSaneado.valor, 150, "el nombre")) {
+      return res.status(400).json({ mensaje: mensajeExcedeLargo("el nombre", 150) });
+    }
+    if (!esCorreoValido(email)) {
       return res.status(400).json({ mensaje: "Ingresa un nombre y correo válidos." });
     }
     if (password.length < 10) {
@@ -104,7 +113,7 @@ router.post("/usuarios", authenticateToken, requireRole("Administrador académic
       `INSERT INTO usuarios_sistema (nombre, email, password_hash, rol_id)
        VALUES ($1, $2, $3, $4)
        RETURNING id, nombre, email, activo, creado_en`,
-      [nombre, email, hash, roleResult.rows[0].id]
+      [nombreSaneado.valor, email, hash, roleResult.rows[0].id]
     );
     res.status(201).json({ usuario: { ...result.rows[0], rol } });
   } catch (error) {

@@ -1,12 +1,20 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import { apiFetch, API_URL } from "../services/api";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { apiFetch } from "../services/api";
 
 const DataContext = createContext();
 export function useData() {
   return useContext(DataContext);
 }
 
-const soloFecha = (valor) => (valor ? String(valor).slice(0, 10) : "");
+const soloFecha = (valor) => {
+  if (!valor) return "";
+  if (valor instanceof Date) {
+    const mes = String(valor.getMonth() + 1).padStart(2, "0");
+    const dia = String(valor.getDate()).padStart(2, "0");
+    return `${valor.getFullYear()}-${mes}-${dia}`;
+  }
+  return String(valor).slice(0, 10);
+};
 
 const candidatoDesdeApi = (c) => ({
   id: c.id,
@@ -94,14 +102,14 @@ export function DataProvider({ children }) {
         }
         setCargando(false);
       })
-      .catch((e) => {
+      .catch(() => {
         if (!vigente) return;
         setCargando(false);
         setError("No se pudo conectar con el servidor. Verifica que el backend esté corriendo.");
       });
 
     return () => { vigente = false; };
-  }, [API_URL]);
+  }, []);
 
   const agregarCandidato = async (form) => {
     setGuardando(true);
@@ -248,14 +256,14 @@ export function DataProvider({ children }) {
 
   const obtenerEvaluacion = (solicitudId) => evaluaciones.find((e) => e.solicitudId === Number(solicitudId));
 
-  const cargarEvaluacion = async (solicitudId) => {
+  const cargarEvaluacion = useCallback(async (solicitudId) => {
     const resultado = await apiFetch(`/evaluaciones/${solicitudId}`);
     const data = await resultado.safeJson();
     if (!data) return null;
     const evaluacion = evaluacionDesdeApi(data);
     setEvaluaciones((prev) => [...prev.filter((e) => e.solicitudId !== evaluacion.solicitudId), evaluacion]);
     return evaluacion;
-  };
+  }, []);
 
   const guardarEvaluacion = async (solicitudId, form) => {
     setGuardando(true);

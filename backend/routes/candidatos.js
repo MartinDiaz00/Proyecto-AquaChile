@@ -2,8 +2,51 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
+const { sanearTexto, excedeLargo, mensajeExcedeLargo, esCorreoValido } = require("../utils/texto");
 
 const EDITORES = ["Administrador académico", "Analista de Reclutamiento"];
+
+// Largos según el esquema (neon/02_tablas_principales.sql).
+const LARGOS = {
+  nombre: 150,
+  correo: 255,
+  telefono: 50,
+  cargo_postulado: 150,
+  familia_cargo: 100,
+};
+
+/**
+ * Sanea y valida los datos de un candidato.
+ * @returns {{ datos: object, error: string|null }}
+ */
+function prepararCandidato(body) {
+  const campos = [
+    { nombre: "nombre", etiqueta: "el nombre", requerido: true, max: LARGOS.nombre },
+    { nombre: "correo", etiqueta: "el correo", requerido: true, max: LARGOS.correo },
+    { nombre: "telefono", etiqueta: "el teléfono", requerido: false, max: LARGOS.telefono },
+    { nombre: "cargo_postulado", etiqueta: "el cargo", requerido: true, max: LARGOS.cargo_postulado },
+    { nombre: "familia_cargo", etiqueta: "la familia de cargo", requerido: true, max: LARGOS.familia_cargo },
+  ];
+
+  const datos = {};
+  for (const campo of campos) {
+    const { valor, error } = sanearTexto(body[campo.nombre], {
+      campo: campo.etiqueta,
+      requerido: campo.requerido,
+    });
+    if (error) return { datos: null, error };
+    if (valor !== null && excedeLargo(valor, campo.max, campo.etiqueta)) {
+      return { datos: null, error: mensajeExcedeLargo(campo.etiqueta, campo.max) };
+    }
+    datos[campo.nombre] = valor;
+  }
+
+  if (!esCorreoValido(datos.correo)) {
+    return { datos: null, error: "El correo no tiene un formato válido." };
+  }
+
+  return { datos, error: null };
+}
 
 router.use(authenticateToken);
 
@@ -35,17 +78,14 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", requireRole(...EDITORES), async (req, res) => {
-  const { nombre, correo, telefono, cargo_postulado, familia_cargo } = req.body;
-  if (!String(nombre || "").trim() || !String(correo || "").trim() ||
-      !String(cargo_postulado || "").trim() || !String(familia_cargo || "").trim()) {
-    return res.status(400).json({ error: "Nombre, correo, cargo y familia de cargo son obligatorios." });
-  }
+  const { datos, error } = prepararCandidato(req.body);
+  if (error) return res.status(400).json({ error });
+
   try {
     const resultado = await pool.query(
       `INSERT INTO candidatos (nombre, correo, telefono, cargo_postulado, familia_cargo)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [String(nombre).trim(), String(correo).trim(), telefono || null,
-       String(cargo_postulado).trim(), String(familia_cargo).trim()]
+      [datos.nombre, datos.correo, datos.telefono, datos.cargo_postulado, datos.familia_cargo]
     );
     res.status(201).json(resultado.rows[0]);
   } catch (error) {
@@ -58,11 +98,8 @@ router.put("/:id", requireRole(...EDITORES), async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: "ID inválido." });
 
-  const { nombre, correo, telefono, cargo_postulado, familia_cargo } = req.body;
-  if (!String(nombre || "").trim() || !String(correo || "").trim() ||
-      !String(cargo_postulado || "").trim() || !String(familia_cargo || "").trim()) {
-    return res.status(400).json({ error: "Nombre, correo, cargo y familia de cargo son obligatorios." });
-  }
+  const { datos, error } = prepararCandidato(req.body);
+  if (error) return res.status(400).json({ error });
 
   try {
     const existe = await pool.query("SELECT id FROM candidatos WHERE id = $1", [id]);
@@ -77,8 +114,7 @@ router.put("/:id", requireRole(...EDITORES), async (req, res) => {
          SET nombre = $1, correo = $2, telefono = $3, cargo_postulado = $4, familia_cargo = $5,
              actualizado_en = NOW()
          WHERE id = $6 RETURNING *`,
-        [String(nombre).trim(), String(correo).trim(), telefono || null,
-         String(cargo_postulado).trim(), String(familia_cargo).trim(), id]
+        [datos.nombre, datos.correo, datos.telefono, datos.cargo_postulado, datos.familia_cargo, id]
       );
       res.json(resultado.rows[0]);
     } catch (updateError) {
@@ -88,8 +124,7 @@ router.put("/:id", requireRole(...EDITORES), async (req, res) => {
           `UPDATE candidatos
            SET nombre = $1, correo = $2, telefono = $3, cargo_postulado = $4, familia_cargo = $5
            WHERE id = $6 RETURNING *`,
-          [String(nombre).trim(), String(correo).trim(), telefono || null,
-           String(cargo_postulado).trim(), String(familia_cargo).trim(), id]
+          [datos.nombre, datos.correo, datos.telefono, datos.cargo_postulado, datos.familia_cargo, id]
         );
         res.json(resultado.rows[0]);
       } else {

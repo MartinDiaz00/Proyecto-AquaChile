@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { useAuth } from "../context/AuthContext";
+import { TextoSano } from "../components/TextoSano";
 import * as XLSX from "xlsx";
 
 function Solicitudes() {
-  const { solicitudes, candidatos, avanzarEstado, nombreCandidato, cargando } = useData();
+  const { solicitudes, avanzarEstado, nombreCandidato, cargando } = useData();
   const { permisos } = useAuth();
   const navigate = useNavigate();
 
@@ -304,7 +305,7 @@ function Solicitudes() {
                 <td>{s.fechaSolicitud}</td>
                 <td><span className={`badge bg-${colorEstado(s.estado)}`}>{s.estado}</span></td>
                 <td>{s.responsable}</td>
-                <td>{s.aspectosIndagar || "—"}</td>
+                <td><TextoSano valor={s.aspectosIndagar} /></td>
                 <td className="d-flex gap-2">
                   <Link to={`/solicitudes/${s.id}`} className="btn btn-sm btn-outline-primary">
                     <i className="bi bi-eye-fill me-1"></i>Ver

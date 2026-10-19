@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
+const { sanearTexto, excedeLargo, mensajeExcedeLargo, esFechaValida } = require("../utils/texto");
 
 router.use(authenticateToken);
 
@@ -30,7 +31,24 @@ router.post("/", requireRole("Administrador académico", "Profesional Evaluador"
       !resultadosPermitidos.includes(resultado)) {
     return res.status(400).json({ error: "Solicitud, fecha y resultado válido son obligatorios." });
   }
+  if (!esFechaValida(fecha_evaluacion)) {
+    return res.status(400).json({ error: "La fecha de evaluación no es válida." });
+  }
+
+  const { valor: observacionesLimpias, error } = sanearTexto(observaciones, {
+    campo: "las observaciones",
+  });
+  if (error) return res.status(400).json({ error });
+  if (excedeLargo(observacionesLimpias, 5000, "las observaciones")) {
+    return res.status(400).json({ error: mensajeExcedeLargo("las observaciones", 5000) });
+  }
+
   try {
+    const solicitud = await pool.query("SELECT id FROM solicitudes WHERE id = $1", [solicitudId]);
+    if (!solicitud.rows[0]) {
+      return res.status(400).json({ error: "La solicitud seleccionada no existe." });
+    }
+
     const upsert = await pool.query(
       `INSERT INTO evaluaciones (solicitud_id, fecha_evaluacion, resultado, observaciones, estado)
        VALUES ($1, $2, $3, $4, 'Completada')
@@ -40,7 +58,7 @@ router.post("/", requireRole("Administrador académico", "Profesional Evaluador"
                      observaciones = EXCLUDED.observaciones,
                      estado = 'Completada'
        RETURNING *`,
-      [solicitudId, fecha_evaluacion, resultado, observaciones || ""]
+      [solicitudId, fecha_evaluacion, resultado, observacionesLimpias || ""]
     );
     await pool.query("UPDATE solicitudes SET estado = 'Finalizada' WHERE id = $1", [solicitudId]);
     res.status(201).json(upsert.rows[0]);

@@ -14,6 +14,8 @@ Aplicación Full Stack para gestionar candidatos, solicitudes y evaluaciones psi
 - Roles y permisos comprobados también en el backend.
 - Pantalla de administración de usuarios, disponible solo para Administrador académico.
 - Conserva las funciones existentes de candidatos, solicitudes, evaluaciones y dashboard.
+- Saneado de texto: tildes, Ñ y símbolos se guardan siempre en UTF-8 válido.
+- Validación de datos en la API (correos, fechas, largos y referencias).
 
 ## Roles
 - **Administrador académico:** administración de usuarios, candidatos, solicitudes y evaluaciones.
@@ -28,6 +30,26 @@ Los permisos son una propuesta coherente con los permisos simulados del MVP. El 
 2. Copia y ejecuta el archivo `neon/01_roles_y_usuarios.sql` (crea roles y usuarios del sistema).
 3. Copia y ejecuta el archivo `neon/02_tablas_principales.sql` (crea `candidatos`, `solicitudes` y `evaluaciones`).
 4. Ninguno de los scripts elimina ni modifica tablas existentes; solo crean si no existen.
+
+## Codificación de texto (tildes, Ñ y símbolos)
+
+La base de datos es UTF-8. Si un texto entra con la codificación rota, queda el carácter
+`�` (U+FFFD) y se ve como "conexi�n" en pantalla. Para evitarlo:
+
+- El backend sanea todo texto que entra (`backend/utils/texto.js`): repara mojibake
+  ("conexiÃ³n" → "conexión"), quita caracteres de control y rechaza con un mensaje claro
+  los textos donde el carácter original ya se perdió.
+- La base tiene restricciones `CHECK` que impiden guardar `�` en cualquier columna de texto.
+- Si necesitas revisar o reparar datos existentes:
+
+```powershell
+cd backend
+npm run reparar-texto           # repara y aplica las restricciones
+npm run reparar-texto -- --dry  # solo informa, no escribe
+```
+
+Este script también aplica `neon/03_sanitizacion_texto.sql`. Si prefieres ejecutarlo a mano,
+copia y pega ese archivo en el SQL Editor de Neon **después** de la reparación.
 
 ## 2. Configurar backend
 En PowerShell, desde la carpeta raíz del proyecto:
@@ -84,6 +106,15 @@ Luego entra a **Usuarios** desde el menú para crear cuentas con sus roles. No e
 - `GET /api/auth/usuarios` — lista usuarios; requiere Administrador académico.
 - `POST /api/auth/usuarios` — crea usuario; requiere Administrador académico.
 - `PATCH /api/auth/usuarios/:id/estado` — activa/desactiva cuenta; requiere Administrador académico.
+
+## Endpoints de negocio
+- `GET /api/candidatos`, `GET /api/candidatos/:id`, `POST /api/candidatos`, `PUT /api/candidatos/:id`, `DELETE /api/candidatos/:id`.
+- `GET /api/solicitudes`, `POST /api/solicitudes`, `PATCH /api/solicitudes/:id/estado`.
+- `GET /api/evaluaciones/:solicitudId`, `POST /api/evaluaciones`.
+
+Todos devuelven `400` con un mensaje en español cuando el dato es inválido
+(formato de correo, fecha, largo máximo, candidato o solicitud inexistente,
+o texto con caracteres de codificación rotos).
 
 ## Importante antes de desplegar
 - Configura `DATABASE_URL` y `JWT_SECRET` en el entorno del backend (por ejemplo Render).

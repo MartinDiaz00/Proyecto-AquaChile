@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useData } from "../context/DataContext";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { TextoSano } from "../components/TextoSano";
 
 function Candidatos() {
   const { candidatos, agregarCandidato, editarCandidato, eliminarCandidato, guardando } = useData();
@@ -291,7 +292,7 @@ function Candidatos() {
                   )}
                 </div>
 
-                <h5>{c.nombre}</h5>
+                <h5><TextoSano valor={c.nombre} /></h5>
 
                 <div className="candidato-detalle">
                   <i className="bi bi-envelope-fill"></i>

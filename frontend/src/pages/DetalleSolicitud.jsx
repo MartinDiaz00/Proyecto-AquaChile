@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
+import { TextoSano } from "../components/TextoSano";
 
 function DetalleSolicitud() {
   const { id } = useParams();
@@ -11,22 +12,37 @@ function DetalleSolicitud() {
   const { permisos } = useAuth();
   const { mostrarToast } = useToast();
 
-  useEffect(() => {
-    cargarEvaluacion(id);
-  }, [id]);
-
   const solicitud = obtenerSolicitud(id);
   const evaluacionExistente = obtenerEvaluacion(id);
   const candidato = solicitud ? candidatos.find((c) => c.id === solicitud.candidatoId) : null;
 
   const [form, setForm] = useState({
-    fechaEvaluacion: evaluacionExistente?.fechaEvaluacion || "",
-    resultado: evaluacionExistente?.resultado || "",
-    observaciones: evaluacionExistente?.observaciones || "",
+    fechaEvaluacion: "",
+    resultado: "",
+    observaciones: "",
   });
   const [errores, setErrores] = useState({});
   const [guardadoOk, setGuardadoOk] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [formSincronizadoPara, setFormSincronizadoPara] = useState(null);
+
+  useEffect(() => {
+    cargarEvaluacion(id);
+  }, [id, cargarEvaluacion]);
+
+  // La evaluación se carga de forma asíncrona: hay que rellenar el formulario
+  // cuando llegue, o se mostraría vacío aunque la solicitud ya esté evaluada.
+  // Se sincroniza una vez por solicitud (por id) para no pisar lo que el
+  // evaluador está escribiendo.
+  useEffect(() => {
+    if (!evaluacionExistente || formSincronizadoPara === id) return;
+    setForm({
+      fechaEvaluacion: evaluacionExistente.fechaEvaluacion || "",
+      resultado: evaluacionExistente.resultado || "",
+      observaciones: evaluacionExistente.observaciones || "",
+    });
+    setFormSincronizadoPara(id);
+  }, [evaluacionExistente, formSincronizadoPara, id]);
 
   if (!solicitud) {
     return (
@@ -113,7 +129,7 @@ function DetalleSolicitud() {
 
               <dl className="row mb-0">
                 <dt className="col-5 text-muted">Candidato</dt>
-                <dd className="col-7">{candidato?.nombre || "—"}</dd>
+                <dd className="col-7"><TextoSano valor={candidato?.nombre} /></dd>
 
                 <dt className="col-5 text-muted">Correo</dt>
                 <dd className="col-7">{candidato?.correo || "—"}</dd>
@@ -155,7 +171,7 @@ function DetalleSolicitud() {
                 <dd className="col-7">{solicitud.esReferido ? "Sí" : "No"}</dd>
 
                 <dt className="col-5 text-muted">Aspectos a indagar</dt>
-                <dd className="col-7">{solicitud.aspectosIndagar || "—"}</dd>
+                <dd className="col-7"><TextoSano valor={solicitud.aspectosIndagar} /></dd>
               </dl>
             </div>
           </div>

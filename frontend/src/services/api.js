@@ -24,7 +24,7 @@ export async function apiFetch(path, options = {}) {
   let response;
   try {
     response = await fetch(fullUrl, { ...options, headers });
-  } catch (error) {
+  } catch {
     throw new Error("No se pudo conectar con el servidor. ¿Está corriendo el backend?");
   }
 
