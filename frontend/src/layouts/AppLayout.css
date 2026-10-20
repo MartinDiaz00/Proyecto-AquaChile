@@ -1,0 +1,12 @@
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+.app-layout__main {
+  flex: 1 0 auto;
+  width: 100%;
+  padding-bottom: clamp(1.5rem, 4vw, 3rem);
+}

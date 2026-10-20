@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { DataProvider, useData } from "./context/DataContext";
 import { ToastProvider } from "./context/ToastContext";
-import Navbar from "./components/Navbar";
+import AppLayout from "./layouts/AppLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Candidatos from "./pages/Candidatos";
@@ -33,7 +33,6 @@ function AppShell() {
 
   return (
     <BrowserRouter>
-      <Navbar />
       {error && (
         <div className="alert alert-danger alert-dismissible fade show rounded-0 mb-0 text-center position-fixed top-0 start-0 w-100 z-index-1050" style={{ zIndex: 9999 }}>
           <i className="bi bi-exclamation-triangle-fill me-2"></i>{error}
@@ -47,14 +46,16 @@ function AppShell() {
         </div>
       )}
       <Routes>
-        <Route path="/login" element={<Navigate to="/" replace />} />
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/candidatos" element={<SoloConPermiso permiso="candidatos"><Candidatos /></SoloConPermiso>} />
-        <Route path="/solicitudes" element={<Solicitudes />} />
-        <Route path="/nueva-solicitud" element={<SoloConPermiso permiso="crearSolicitud"><NuevaSolicitud /></SoloConPermiso>} />
-        <Route path="/solicitudes/:id" element={<DetalleSolicitud />} />
-        <Route path="/usuarios" element={<SoloConPermiso permiso="usuarios"><Usuarios /></SoloConPermiso>} />
-        <Route path="*" element={<div className="container mt-5"><div className="alert alert-warning">Página no encontrada.</div></div>} />
+        <Route element={<AppLayout />}>
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/candidatos" element={<SoloConPermiso permiso="candidatos"><Candidatos /></SoloConPermiso>} />
+          <Route path="/solicitudes" element={<Solicitudes />} />
+          <Route path="/nueva-solicitud" element={<SoloConPermiso permiso="crearSolicitud"><NuevaSolicitud /></SoloConPermiso>} />
+          <Route path="/solicitudes/:id" element={<DetalleSolicitud />} />
+          <Route path="/usuarios" element={<SoloConPermiso permiso="usuarios"><Usuarios /></SoloConPermiso>} />
+          <Route path="*" element={<div className="container mt-5"><div className="alert alert-warning">Página no encontrada.</div></div>} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
