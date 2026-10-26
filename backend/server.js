@@ -6,6 +6,7 @@ const solicitudesRouter = require("./routes/solicitudes");
 const evaluacionesRouter = require("./routes/evaluaciones");
 const authRouter = require("./routes/auth");
 const candidatosRouter = require("./routes/candidatos");
+const archivosRouter = require("./routes/archivos");
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/solicitudes", solicitudesRouter);
 app.use("/api/evaluaciones", evaluacionesRouter);
 app.use("/api/candidatos", candidatosRouter);
+app.use("/api/archivos", archivosRouter);
 
 // Ruta raíz y health
 app.get("/health", (_req, res) => res.json({ ok: true }));
@@ -30,6 +32,9 @@ app.use("/api", (_req, res) => {
 // --- Middleware: manejo global de errores (500) ---
 app.use((err, _req, res, _next) => {
   console.error("Error no controlado:", err);
+  if (err.type === "entity.too.large") {
+    return res.status(413).json({ error: "El archivo supera el tamaño máximo permitido." });
+  }
   res.status(500).json({ error: "Error interno del servidor." });
 });
 

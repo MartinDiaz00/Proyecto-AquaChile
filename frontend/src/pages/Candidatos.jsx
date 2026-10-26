@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useData } from "../context/DataContext";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { TextoSano } from "../components/TextoSano";
+import { apiFetch } from "../services/api";
+import * as XLSX from "xlsx";
 
 function Candidatos() {
   const { candidatos, agregarCandidato, editarCandidato, eliminarCandidato, guardando } = useData();
@@ -14,10 +16,29 @@ function Candidatos() {
   const [enviando, setEnviando] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [eliminandoId, setEliminandoId] = useState(null);
+  const [archivosCv, setArchivosCv] = useState([]);
+  const [subiendoCvId, setSubiendoCvId] = useState(null);
+  const [eliminandoCvId, setEliminandoCvId] = useState(null);
+  const [subiendoReporte, setSubiendoReporte] = useState(false);
 
   const formVacio = { nombre: "", correo: "", telefono: "", cargoPostulado: "", familiaCargo: "" };
   const [form, setForm] = useState(formVacio);
   const [errores, setErrores] = useState({});
+
+  useEffect(() => {
+    if (!permisos.candidatos) return undefined;
+    let vigente = true;
+    apiFetch("/archivos/cvs")
+      .then(async (response) => {
+        const data = await response.safeJson();
+        if (!response.ok) throw new Error(data.error || "No se pudieron cargar los CV.");
+        if (vigente) setArchivosCv(data);
+      })
+      .catch((error) => {
+        if (vigente) mostrarToast(error.message, "error");
+      });
+    return () => { vigente = false; };
+  }, [permisos.candidatos, mostrarToast]);
 
   const familiasCargo = ["Profesional A", "Profesional B", "Operario Calificado", "Supervisor B", "Jefatura"];
 
@@ -89,7 +110,7 @@ function Candidatos() {
 
   const confirmarEliminar = async (id, nombre) => {
     const seguro = window.confirm(
-      `¿Estás seguro de que deseas eliminar al candidato "${nombre}"?\n\nEsta acción no se puede deshacer si el candidato tiene solicitudes asociadas.`
+      `¿Estás seguro de que deseas eliminar al candidato "${nombre}"?\n\nEsta acción no se puede deshacer si el candidato tiene solicitudes asociadas. También se eliminarán sus CV de Google Drive.`
     );
     if (!seguro) return;
 
@@ -102,6 +123,111 @@ function Candidatos() {
       mostrarToast(`Error al eliminar: ${error.message}`, "error");
     } finally {
       setEliminandoId(null);
+    }
+  };
+
+  const subirCv = async (candidatoId, evento) => {
+    const archivo = evento.target.files?.[0];
+    if (!archivo) return;
+
+    const extension = archivo.name.split(".").pop()?.toLowerCase();
+    const tiposPorExtension = {
+      pdf: "application/pdf",
+      doc: "application/msword",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    };
+    const tipoContenido = tiposPorExtension[extension];
+    if (!tipoContenido || (archivo.type && archivo.type !== tipoContenido)) {
+      mostrarToast("El CV debe ser un archivo PDF, DOC o DOCX.", "error");
+      evento.target.value = "";
+      return;
+    }
+    if (archivo.size > 10 * 1024 * 1024) {
+      mostrarToast("El CV no puede superar los 10 MB.", "error");
+      evento.target.value = "";
+      return;
+    }
+
+    setSubiendoCvId(candidatoId);
+    try {
+      const response = await apiFetch(`/archivos/candidatos/${candidatoId}/cv`, {
+        method: "POST",
+        headers: { "Content-Type": tipoContenido },
+        body: archivo,
+      });
+      const data = await response.safeJson();
+      if (!response.ok) throw new Error(data.error || "No se pudo subir el CV.");
+      setArchivosCv((prev) => [data, ...prev]);
+      mostrarToast("CV guardado en Google Drive.", "success");
+    } catch (error) {
+      mostrarToast(error.message, "error");
+    } finally {
+      setSubiendoCvId(null);
+      evento.target.value = "";
+    }
+  };
+
+  const eliminarCv = async (archivo) => {
+    const esGoogleDrive = archivo.storage_provider === "google_drive";
+    const mensajeConfirmacion = esGoogleDrive
+      ? `¿Eliminar "${archivo.nombre_archivo}" de Google Drive?`
+      : `Primero elimina "${archivo.nombre_archivo}" directamente en OneDrive. ¿Ya lo hiciste y quieres quitar su referencia de la aplicación?`;
+    if (!window.confirm(mensajeConfirmacion)) return;
+    setEliminandoCvId(archivo.id);
+    try {
+      const endpoint = esGoogleDrive
+        ? `/archivos/cvs/${archivo.id}`
+        : `/archivos/cvs/${archivo.id}/referencia`;
+      const response = await apiFetch(endpoint, { method: "DELETE" });
+      const data = await response.safeJson();
+      if (!response.ok) throw new Error(data.error || "No se pudo eliminar el CV.");
+      setArchivosCv((prev) => prev.filter((item) => item.id !== archivo.id));
+      mostrarToast(
+        esGoogleDrive ? "CV eliminado de Google Drive." : "Referencia antigua eliminada.",
+        "success"
+      );
+    } catch (error) {
+      mostrarToast(error.message, "error");
+    } finally {
+      setEliminandoCvId(null);
+    }
+  };
+
+  const guardarReporteEnGoogleDrive = async () => {
+    const confirmado = window.confirm(
+      "El Excel contiene nombres, correos, teléfonos y cargos de candidatos. Confirma que la carpeta institucional de Google Drive tiene acceso restringido antes de subirlo."
+    );
+    if (!confirmado) return;
+
+    setSubiendoReporte(true);
+    try {
+      const datos = candidatos.map((c) => ({
+        Nombre: c.nombre,
+        Correo: c.correo,
+        Teléfono: c.telefono || "",
+        Cargo: c.cargoPostulado,
+        "Familia de cargo": c.familiaCargo,
+      }));
+      const libro = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(datos), "Candidatos");
+      const fecha = new Date().toISOString().slice(0, 10);
+      const nombre = `Candidatos_AquaChile_${fecha}.xlsx`;
+      const contenido = XLSX.write(libro, { bookType: "xlsx", type: "array" });
+      const response = await apiFetch("/archivos/reportes/candidatos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "X-Report-Name": nombre,
+        },
+        body: contenido,
+      });
+      const data = await response.safeJson();
+      if (!response.ok) throw new Error(data.error || "No se pudo subir el reporte.");
+      mostrarToast(`Reporte ${data.nombre} guardado en Google Drive.`, "success");
+    } catch (error) {
+      mostrarToast(error.message, "error");
+    } finally {
+      setSubiendoReporte(false);
     }
   };
 
@@ -126,13 +252,23 @@ function Candidatos() {
             <p>Gestiona los candidatos para evaluación psicolaboral</p>
           </div>
           {permisos.candidatos && (
-            <button
-              className="btn-accion-candidato"
-              disabled={guardando}
-              onClick={() => (mostrarForm ? cerrarFormulario() : setMostrarForm(true))}
-            >
-              {mostrarForm ? "Cancelar" : "+ Nuevo candidato"}
-            </button>
+            <div className="d-flex flex-wrap gap-2 justify-content-end">
+              <button
+                className="btn btn-outline-light"
+                disabled={subiendoReporte || candidatos.length === 0}
+                onClick={guardarReporteEnGoogleDrive}
+              >
+                <i className="bi bi-cloud-arrow-up me-1"></i>
+                {subiendoReporte ? "Subiendo..." : "Excel a Google Drive"}
+              </button>
+              <button
+                className="btn-accion-candidato"
+                disabled={guardando}
+                onClick={() => (mostrarForm ? cerrarFormulario() : setMostrarForm(true))}
+              >
+                {mostrarForm ? "Cancelar" : "+ Nuevo candidato"}
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -312,6 +448,43 @@ function Candidatos() {
                 <span className="familia-chip">
                   {c.familiaCargo}
                 </span>
+
+                {permisos.candidatos && (
+                  <div className="mt-3 pt-3 border-top">
+                    <label className={`btn btn-sm btn-outline-primary ${subiendoCvId === c.id ? "disabled" : ""}`}>
+                      <i className="bi bi-file-earmark-arrow-up me-1"></i>
+                      {subiendoCvId === c.id ? "Subiendo CV..." : "Subir CV"}
+                      <input
+                        type="file"
+                        className="visually-hidden"
+                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        disabled={subiendoCvId === c.id}
+                        onChange={(evento) => subirCv(c.id, evento)}
+                      />
+                    </label>
+                    {archivosCv
+                      .filter((archivo) => archivo.candidato_id === c.id)
+                      .map((archivo) => (
+                        <div key={archivo.id} className="d-flex align-items-center justify-content-between gap-2 mt-2 small">
+                          <a href={archivo.web_url} target="_blank" rel="noreferrer" className="text-truncate">
+                            <i className="bi bi-file-earmark-person me-1"></i>{archivo.nombre_archivo}
+                          </a>
+                          {archivo.storage_provider !== "google_drive" && (
+                            <span className="text-muted flex-shrink-0">OneDrive (anterior)</span>
+                          )}
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger flex-shrink-0"
+                            title={archivo.storage_provider === "google_drive" ? "Eliminar CV de Google Drive" : "Quitar referencia después de eliminarlo de OneDrive"}
+                            disabled={eliminandoCvId === archivo.id}
+                            onClick={() => eliminarCv(archivo)}
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}

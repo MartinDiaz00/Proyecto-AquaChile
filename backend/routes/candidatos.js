@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require("../db");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
 const { sanearTexto, excedeLargo, mensajeExcedeLargo, esCorreoValido } = require("../utils/texto");
+const { eliminarArchivo, GoogleDriveError } = require("../services/googleDrive");
 
 const EDITORES = ["Administrador académico", "Analista de Reclutamiento"];
 
@@ -155,10 +156,27 @@ router.delete("/:id", requireRole("Administrador académico"), async (req, res) 
       });
     }
 
+    const archivos = await pool.query(
+      "SELECT id, drive_item_id, storage_provider FROM archivos_candidato WHERE candidato_id = $1",
+      [id]
+    );
+    const archivosLegados = archivos.rows.filter((archivo) => archivo.storage_provider !== "google_drive");
+    if (archivosLegados.length > 0) {
+      return res.status(409).json({
+        error: "El candidato tiene CV antiguos en OneDrive. Elimínalos allí y quita sus referencias desde la aplicación antes de borrar al candidato.",
+      });
+    }
+    for (const archivo of archivos.rows) {
+      await eliminarArchivo(archivo.drive_item_id);
+    }
+
     await pool.query("DELETE FROM candidatos WHERE id = $1", [id]);
     res.json({ mensaje: "Candidato eliminado correctamente.", id });
   } catch (error) {
     console.error("Error eliminando candidato:", error);
+    if (error instanceof GoogleDriveError) {
+      return res.status(error.status).json({ error: error.message });
+    }
     res.status(500).json({ error: "No se pudo eliminar el candidato." });
   }
 });

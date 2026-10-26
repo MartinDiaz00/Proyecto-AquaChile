@@ -2,12 +2,15 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import { apiFetch } from "../services/api";
 import { TextoSano } from "../components/TextoSano";
 import * as XLSX from "xlsx";
 
 function Solicitudes() {
   const { solicitudes, avanzarEstado, nombreCandidato, cargando } = useData();
   const { permisos } = useAuth();
+  const { mostrarToast } = useToast();
   const navigate = useNavigate();
 
   const [searchParams] = useSearchParams();
@@ -15,6 +18,7 @@ function Solicitudes() {
   const [filtroCargo, setFiltroCargo] = useState("");
   const [filtroCandidato, setFiltroCandidato] = useState("");
   const [filtroFecha, setFiltroFecha] = useState("");
+  const [subiendoReporte, setSubiendoReporte] = useState(false);
 
   const colorEstado = (estado) => {
     if (estado === "Pendiente") return "warning";
@@ -36,7 +40,7 @@ function Solicitudes() {
     .filter((s) => nombreCandidato(s.candidatoId).toLowerCase().includes(filtroCandidato.toLowerCase()))
     .filter((s) => !filtroFecha || s.fechaSolicitud === filtroFecha);
 
-  const exportarAExcel = () => {
+  const crearLibroExcel = () => {
     const COLOR_TITULO = "081B2E";    // azul profundo marca AquaChile
     const COLOR_ENCABEZADO = "1F9D96"; // turquesa marca
     const COLOR_FILA_ALTERNA = "E6F5F4"; // turquesa muy suave
@@ -213,10 +217,42 @@ function Solicitudes() {
     const libro = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(libro, hoja, "Solicitudes");
 
-    XLSX.writeFile(
-      libro,
-      `Solicitudes_Psicolaborales_AquaChile_${new Date().toISOString().slice(0, 10)}.xlsx`
+    return libro;
+  };
+
+  const nombreReporte = () =>
+    `Solicitudes_Psicolaborales_AquaChile_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+  const exportarAExcel = () => {
+    XLSX.writeFile(crearLibroExcel(), nombreReporte());
+  };
+
+  const guardarReporteEnGoogleDrive = async () => {
+    const confirmado = window.confirm(
+      "El reporte contiene datos de candidatos y aspectos a indagar de sus evaluaciones. Confirma que la carpeta institucional de Google Drive tiene acceso restringido antes de subirlo."
     );
+    if (!confirmado) return;
+
+    setSubiendoReporte(true);
+    try {
+      const nombre = nombreReporte();
+      const contenido = XLSX.write(crearLibroExcel(), { bookType: "xlsx", type: "array" });
+      const response = await apiFetch("/archivos/reportes/solicitudes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "X-Report-Name": nombre,
+        },
+        body: contenido,
+      });
+      const data = await response.safeJson();
+      if (!response.ok) throw new Error(data.error || "No se pudo subir el reporte.");
+      mostrarToast(`Reporte ${data.nombre} guardado en Google Drive.`, "success");
+    } catch (error) {
+      mostrarToast(error.message, "error");
+    } finally {
+      setSubiendoReporte(false);
+    }
   };
 
   if (cargando) {
@@ -239,6 +275,16 @@ function Solicitudes() {
           <button className="btn btn-outline-success" onClick={exportarAExcel} disabled={solicitudesFiltradas.length === 0}>
             <i className="bi bi-file-earmark-excel me-1"></i>Exportar a Excel
           </button>
+          {permisos.candidatos && (
+            <button
+              className="btn btn-outline-light"
+              onClick={guardarReporteEnGoogleDrive}
+              disabled={subiendoReporte || solicitudesFiltradas.length === 0}
+            >
+              <i className="bi bi-cloud-arrow-up me-1"></i>
+              {subiendoReporte ? "Subiendo..." : "Guardar en Google Drive"}
+            </button>
+          )}
           {permisos.crearSolicitud && (
             <button className="btn btn-primary" onClick={() => navigate("/nueva-solicitud")}>
               <i className="bi bi-plus-lg me-1"></i>Nueva solicitud
