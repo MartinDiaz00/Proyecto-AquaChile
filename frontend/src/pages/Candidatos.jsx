@@ -18,10 +18,20 @@ function Candidatos() {
   const [eliminandoId, setEliminandoId] = useState(null);
   const [archivosCv, setArchivosCv] = useState([]);
   const [subiendoCvId, setSubiendoCvId] = useState(null);
+  const [generandoCvId, setGenerandoCvId] = useState(null);
   const [eliminandoCvId, setEliminandoCvId] = useState(null);
   const [subiendoReporte, setSubiendoReporte] = useState(false);
 
-  const formVacio = { nombre: "", correo: "", telefono: "", cargoPostulado: "", familiaCargo: "" };
+  const formVacio = {
+    nombre: "",
+    correo: "",
+    telefono: "",
+    cargoPostulado: "",
+    familiaCargo: "",
+    perfilProfesional: "",
+    educacion: "",
+    habilidades: "",
+  };
   const [form, setForm] = useState(formVacio);
   const [errores, setErrores] = useState({});
 
@@ -96,6 +106,9 @@ function Candidatos() {
       telefono: candidato.telefono || "",
       cargoPostulado: candidato.cargoPostulado || "",
       familiaCargo: candidato.familiaCargo || "",
+      perfilProfesional: candidato.perfilProfesional || "",
+      educacion: candidato.educacion || "",
+      habilidades: candidato.habilidades || "",
     });
     setEditandoId(candidato.id);
     setMostrarForm(true);
@@ -164,6 +177,35 @@ function Candidatos() {
     } finally {
       setSubiendoCvId(null);
       evento.target.value = "";
+    }
+  };
+
+  const generarCv = async (candidato) => {
+    if (!candidato.perfilProfesional && !candidato.educacion && !candidato.habilidades) {
+      mostrarToast("Completa el perfil, la educación o las habilidades al editar el candidato antes de generar el CV.", "error");
+      return;
+    }
+    const confirmado = window.confirm(
+      `Se generará un CV Word con los datos de ${candidato.nombre} y se guardará en su carpeta personal de Google Drive. Confirma que tienes autorización para almacenar estos datos personales.`
+    );
+    if (!confirmado) return;
+
+    setGenerandoCvId(candidato.id);
+    try {
+      const response = await apiFetch(`/archivos/candidatos/${candidato.id}/generar-cv`, {
+        method: "POST",
+      });
+      const data = await response.safeJson();
+      if (!response.ok) throw new Error(data.error || "No se pudo generar el CV.");
+      setArchivosCv((prev) => {
+        const sinDuplicado = prev.filter((archivo) => archivo.drive_item_id !== data.drive_item_id);
+        return [data, ...sinDuplicado];
+      });
+      mostrarToast("CV Word generado y guardado en la carpeta del candidato en Google Drive.", "success");
+    } catch (error) {
+      mostrarToast(error.message, "error");
+    } finally {
+      setGenerandoCvId(null);
     }
   };
 
@@ -350,6 +392,45 @@ function Candidatos() {
                 </select>
                 {errores.familiaCargo && <div className="invalid-feedback">{errores.familiaCargo}</div>}
               </div>
+
+              <div className="col-12">
+                <label className="form-label">Perfil profesional</label>
+                <textarea
+                  name="perfilProfesional"
+                  className="form-control"
+                  rows="3"
+                  maxLength="2000"
+                  placeholder="Resumen profesional proporcionado por el candidato"
+                  value={form.perfilProfesional}
+                  onChange={manejarCambio}
+                />
+              </div>
+
+              <div className="col-12">
+                <label className="form-label">Educación y certificaciones</label>
+                <textarea
+                  name="educacion"
+                  className="form-control"
+                  rows="3"
+                  maxLength="4000"
+                  placeholder="Institución, título, certificaciones y años si corresponde"
+                  value={form.educacion}
+                  onChange={manejarCambio}
+                />
+              </div>
+
+              <div className="col-12">
+                <label className="form-label">Habilidades</label>
+                <textarea
+                  name="habilidades"
+                  className="form-control"
+                  rows="3"
+                  maxLength="3000"
+                  placeholder="Habilidades técnicas y profesionales"
+                  value={form.habilidades}
+                  onChange={manejarCambio}
+                />
+              </div>
             </div>
 
             <div className="d-flex gap-2 mt-4 pt-3 border-top">
@@ -451,6 +532,15 @@ function Candidatos() {
 
                 {permisos.candidatos && (
                   <div className="mt-3 pt-3 border-top">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-success me-2"
+                      disabled={generandoCvId === c.id}
+                      onClick={() => generarCv(c)}
+                    >
+                      <i className="bi bi-file-earmark-word me-1"></i>
+                      {generandoCvId === c.id ? "Generando..." : "Generar CV Word"}
+                    </button>
                     <label className={`btn btn-sm btn-outline-primary ${subiendoCvId === c.id ? "disabled" : ""}`}>
                       <i className="bi bi-file-earmark-arrow-up me-1"></i>
                       {subiendoCvId === c.id ? "Subiendo CV..." : "Subir CV"}

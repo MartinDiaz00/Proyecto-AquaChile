@@ -23,6 +23,9 @@ const candidatoDesdeApi = (c) => ({
   telefono: c.telefono,
   cargoPostulado: c.cargo_postulado,
   familiaCargo: c.familia_cargo,
+  perfilProfesional: c.perfil_profesional || "",
+  educacion: c.educacion || "",
+  habilidades: c.habilidades || "",
 });
 
 const solicitudDesdeApi = (s) => ({
@@ -123,6 +126,9 @@ export function DataProvider({ children }) {
           telefono: form.telefono,
           cargo_postulado: form.cargoPostulado,
           familia_cargo: form.familiaCargo,
+          perfil_profesional: form.perfilProfesional,
+          educacion: form.educacion,
+          habilidades: form.habilidades,
         }),
       });
       if (!resultado.ok) {
@@ -154,6 +160,9 @@ export function DataProvider({ children }) {
           telefono: form.telefono ? String(form.telefono).trim() : null,
           cargo_postulado: String(form.cargoPostulado || "").trim(),
           familia_cargo: String(form.familiaCargo || "").trim(),
+          perfil_profesional: String(form.perfilProfesional || "").trim(),
+          educacion: String(form.educacion || "").trim(),
+          habilidades: String(form.habilidades || "").trim(),
         }),
       });
 

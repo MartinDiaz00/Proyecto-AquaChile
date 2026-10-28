@@ -7,13 +7,16 @@ const { eliminarArchivo, GoogleDriveError } = require("../services/googleDrive")
 
 const EDITORES = ["Administrador académico", "Analista de Reclutamiento"];
 
-// Largos según el esquema (neon/02_tablas_principales.sql).
+// Largos según neon/02_tablas_principales.sql y neon/05_datos_cv_candidatos.sql.
 const LARGOS = {
   nombre: 150,
   correo: 255,
   telefono: 50,
   cargo_postulado: 150,
   familia_cargo: 100,
+  perfil_profesional: 2000,
+  educacion: 4000,
+  habilidades: 3000,
 };
 
 /**
@@ -27,6 +30,9 @@ function prepararCandidato(body) {
     { nombre: "telefono", etiqueta: "el teléfono", requerido: false, max: LARGOS.telefono },
     { nombre: "cargo_postulado", etiqueta: "el cargo", requerido: true, max: LARGOS.cargo_postulado },
     { nombre: "familia_cargo", etiqueta: "la familia de cargo", requerido: true, max: LARGOS.familia_cargo },
+    { nombre: "perfil_profesional", etiqueta: "el perfil profesional", requerido: false, max: LARGOS.perfil_profesional },
+    { nombre: "educacion", etiqueta: "la educación", requerido: false, max: LARGOS.educacion },
+    { nombre: "habilidades", etiqueta: "las habilidades", requerido: false, max: LARGOS.habilidades },
   ];
 
   const datos = {};
@@ -41,6 +47,10 @@ function prepararCandidato(body) {
     }
     datos[campo.nombre] = valor;
   }
+
+  datos.perfil_profesional = datos.perfil_profesional || "";
+  datos.educacion = datos.educacion || "";
+  datos.habilidades = datos.habilidades || "";
 
   if (!esCorreoValido(datos.correo)) {
     return { datos: null, error: "El correo no tiene un formato válido." };
@@ -84,9 +94,19 @@ router.post("/", requireRole(...EDITORES), async (req, res) => {
 
   try {
     const resultado = await pool.query(
-      `INSERT INTO candidatos (nombre, correo, telefono, cargo_postulado, familia_cargo)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [datos.nombre, datos.correo, datos.telefono, datos.cargo_postulado, datos.familia_cargo]
+      `INSERT INTO candidatos
+         (nombre, correo, email, telefono, cargo_postulado, familia_cargo, perfil_profesional, educacion, habilidades)
+       VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [
+        datos.nombre,
+        datos.correo,
+        datos.telefono,
+        datos.cargo_postulado,
+        datos.familia_cargo,
+        datos.perfil_profesional,
+        datos.educacion,
+        datos.habilidades,
+      ]
     );
     res.status(201).json(resultado.rows[0]);
   } catch (error) {
@@ -112,10 +132,21 @@ router.put("/:id", requireRole(...EDITORES), async (req, res) => {
     try {
       const resultado = await pool.query(
         `UPDATE candidatos
-         SET nombre = $1, correo = $2, telefono = $3, cargo_postulado = $4, familia_cargo = $5,
+         SET nombre = $1, correo = $2, email = $2, telefono = $3, cargo_postulado = $4, familia_cargo = $5,
+             perfil_profesional = $6, educacion = $7, habilidades = $8,
              actualizado_en = NOW()
-         WHERE id = $6 RETURNING *`,
-        [datos.nombre, datos.correo, datos.telefono, datos.cargo_postulado, datos.familia_cargo, id]
+         WHERE id = $9 RETURNING *`,
+        [
+          datos.nombre,
+          datos.correo,
+          datos.telefono,
+          datos.cargo_postulado,
+          datos.familia_cargo,
+          datos.perfil_profesional,
+          datos.educacion,
+          datos.habilidades,
+          id,
+        ]
       );
       res.json(resultado.rows[0]);
     } catch (updateError) {
@@ -123,9 +154,20 @@ router.put("/:id", requireRole(...EDITORES), async (req, res) => {
       if (updateError.code === "42703" || updateError.message.includes("actualizado_en")) {
         const resultado = await pool.query(
           `UPDATE candidatos
-           SET nombre = $1, correo = $2, telefono = $3, cargo_postulado = $4, familia_cargo = $5
-           WHERE id = $6 RETURNING *`,
-          [datos.nombre, datos.correo, datos.telefono, datos.cargo_postulado, datos.familia_cargo, id]
+           SET nombre = $1, correo = $2, email = $2, telefono = $3, cargo_postulado = $4, familia_cargo = $5,
+               perfil_profesional = $6, educacion = $7, habilidades = $8
+           WHERE id = $9 RETURNING *`,
+          [
+            datos.nombre,
+            datos.correo,
+            datos.telefono,
+            datos.cargo_postulado,
+            datos.familia_cargo,
+            datos.perfil_profesional,
+            datos.educacion,
+            datos.habilidades,
+            id,
+          ]
         );
         res.json(resultado.rows[0]);
       } else {

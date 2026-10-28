@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
+const { Document, HeadingLevel, Packer, Paragraph, TextRun } = require("docx");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
 const { GoogleDriveError, subirArchivo, eliminarArchivo } = require("../services/googleDrive");
 
@@ -13,6 +14,7 @@ const MIME_CV = new Map([
 ]);
 const MAX_CV = 10 * 1024 * 1024;
 const MAX_REPORTE = 15 * 1024 * 1024;
+const MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 function contenidoCvValido(contenido, tipoContenido) {
   if (tipoContenido === "application/pdf") {
@@ -27,12 +29,18 @@ function contenidoCvValido(contenido, tipoContenido) {
   return false;
 }
 
+function crearParrafos(texto) {
+  return String(texto || "")
+    .split(/\r?\n/)
+    .map((linea) => new Paragraph(linea || " "));
+}
+
 router.use(authenticateToken);
 
 router.get("/cvs", requireRole(...EDITORES), async (_req, res) => {
   try {
     const resultado = await pool.query(
-      `SELECT id, candidato_id, nombre_archivo, web_url, storage_provider, creado_en
+      `SELECT id, candidato_id, drive_item_id, nombre_archivo, web_url, storage_provider, creado_en
        FROM archivos_candidato
        ORDER BY candidato_id, creado_en DESC`
     );
@@ -93,7 +101,7 @@ router.post(
           `INSERT INTO archivos_candidato
              (candidato_id, drive_item_id, nombre_archivo, web_url, tipo_contenido, tamano_bytes, storage_provider)
            VALUES ($1, $2, $3, $4, $5, $6, 'google_drive')
-           RETURNING id, candidato_id, nombre_archivo, web_url, storage_provider, creado_en`,
+           RETURNING id, candidato_id, drive_item_id, nombre_archivo, web_url, storage_provider, creado_en`,
           [candidatoId, archivo.id, archivo.name, archivo.webUrl, tipoContenido, req.body.length]
         );
         return res.status(201).json(guardado.rows[0]);
@@ -110,6 +118,83 @@ router.post(
       console.error("Error subiendo CV a Google Drive:", error);
       const status = error instanceof GoogleDriveError ? error.status : 500;
       const mensaje = error instanceof GoogleDriveError ? error.message : "No se pudo subir el CV.";
+      return res.status(status).json({ error: mensaje });
+    }
+  }
+);
+
+router.post(
+  "/candidatos/:id/generar-cv",
+  requireRole(...EDITORES),
+  async (req, res) => {
+    const candidatoId = Number(req.params.id);
+    if (!Number.isInteger(candidatoId) || candidatoId < 1) {
+      return res.status(400).json({ error: "ID de candidato inválido." });
+    }
+
+    try {
+      const resultado = await pool.query(
+        `SELECT id, nombre, correo, telefono, cargo_postulado, familia_cargo,
+                perfil_profesional, educacion, habilidades
+         FROM candidatos WHERE id = $1`,
+        [candidatoId]
+      );
+      const candidato = resultado.rows[0];
+      if (!candidato) return res.status(404).json({ error: "Candidato no encontrado." });
+
+      if (!candidato.perfil_profesional && !candidato.educacion && !candidato.habilidades) {
+        return res.status(400).json({
+          error: "Completa al menos perfil profesional, educación o habilidades antes de generar el CV.",
+        });
+      }
+
+      const secciones = [
+        new Paragraph({ text: candidato.nombre, heading: HeadingLevel.TITLE }),
+        new Paragraph({
+          children: [
+            new TextRun(candidato.correo),
+            ...(candidato.telefono ? [new TextRun(` | ${candidato.telefono}`)] : []),
+          ],
+        }),
+        new Paragraph({ text: "Perfil profesional", heading: HeadingLevel.HEADING_1 }),
+        ...crearParrafos(candidato.perfil_profesional || "Información no ingresada."),
+        new Paragraph({ text: "Educación y certificaciones", heading: HeadingLevel.HEADING_1 }),
+        ...crearParrafos(candidato.educacion || "Información no ingresada."),
+        new Paragraph({ text: "Habilidades", heading: HeadingLevel.HEADING_1 }),
+        ...crearParrafos(candidato.habilidades || "Información no ingresada."),
+        new Paragraph({ text: "Postulación", heading: HeadingLevel.HEADING_1 }),
+        new Paragraph({ text: `Cargo: ${candidato.cargo_postulado}` }),
+        new Paragraph({ text: `Familia de cargo: ${candidato.familia_cargo}` }),
+      ];
+      const documento = new Document({ sections: [{ children: secciones }] });
+      const contenido = await Packer.toBuffer(documento);
+      const nombre = `CV_AquaChile_${candidato.id}.docx`;
+      const archivo = await subirArchivo({
+        carpeta: "cvs",
+        nombre,
+        tipoContenido: MIME_DOCX,
+        contenido,
+        candidatoId: candidato.id,
+        candidatoNombre: candidato.nombre,
+      });
+
+      const guardado = await pool.query(
+        `INSERT INTO archivos_candidato
+           (candidato_id, drive_item_id, nombre_archivo, web_url, tipo_contenido, tamano_bytes, storage_provider)
+         VALUES ($1, $2, $3, $4, $5, $6, 'google_drive')
+         ON CONFLICT (drive_item_id) DO UPDATE SET
+           nombre_archivo = EXCLUDED.nombre_archivo,
+           web_url = EXCLUDED.web_url,
+           tipo_contenido = EXCLUDED.tipo_contenido,
+           tamano_bytes = EXCLUDED.tamano_bytes
+         RETURNING id, candidato_id, nombre_archivo, web_url, storage_provider, creado_en`,
+        [candidato.id, archivo.id, archivo.name, archivo.webUrl, MIME_DOCX, contenido.length]
+      );
+      return res.status(201).json(guardado.rows[0]);
+    } catch (error) {
+      console.error("Error generando CV en Google Drive:", error);
+      const status = error instanceof GoogleDriveError ? error.status : 500;
+      const mensaje = error instanceof GoogleDriveError ? error.message : "No se pudo generar el CV.";
       return res.status(status).json({ error: mensaje });
     }
   }
