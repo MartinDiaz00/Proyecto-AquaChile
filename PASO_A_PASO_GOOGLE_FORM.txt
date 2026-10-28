@@ -1,0 +1,51 @@
+GOOGLE FORMS -> BACKEND LOCAL -> NEON
+
+PRUEBA LOCAL
+El backend corre en http://localhost:4000. Google no puede llamar directamente
+a localhost; para probar desde Forms, abre un túnel ngrok al puerto 4000.
+No necesitas desplegar en Render.
+
+1. En Neon, ejecuta neon/07_google_form_candidatos.sql. Si la consulta inicial
+   encuentra correos duplicados, resuélvelos antes de crear el índice único.
+2. En backend/.env configura GOOGLE_FORM_TOKEN con un secreto aleatorio.
+   No compartas .env ni pegues el token en el código.
+3. En una terminal:
+   cd backend
+   npm run dev
+4. En otra terminal:
+   ngrok http 4000
+   Mantén abiertas ambas terminales. Copia la URL HTTPS Forwarding de ngrok.
+5. El Form debe tener preguntas con estos títulos exactos:
+   Nombre, Correo, Teléfono, Cargo postulado, Familia de cargo.
+   Teléfono es opcional; las otras preguntas son obligatorias.
+6. Familia de cargo debe ser desplegable con estas opciones:
+   Profesional A
+   Profesional B
+   Operario Calificado
+   Supervisor B
+   Jefatura
+7. En el Form abre Más (tres puntos) > Apps Script. En Configuración del
+   proyecto > Propiedades del script agrega:
+   BACKEND_URL = https://TU-URL-NGROK/api/google-form/candidatos
+   GOOGLE_FORM_TOKEN = el mismo token de backend/.env
+8. Pega y guarda el código Apps Script entregado para este flujo. Crea un
+   activador para onFormSubmit: Desde un formulario > Al enviar el formulario.
+   Autoriza los permisos solicitados.
+9. Envía una respuesta ficticia. En Apps Script > Ejecuciones verifica que
+   onFormSubmit figure como completada. En Neon revisa candidatos y en el
+   frontend actualiza la pantalla Candidatos.
+
+RESUMEN DE RESPUESTAS API
+201: candidato creado.
+200: correo duplicado.
+400: datos no válidos.
+401: token ausente o incorrecto.
+
+SEGURIDAD
+El token se guarda únicamente en backend/.env y en las Propiedades del script,
+nunca en el código. Si se filtra, genera otro y actualízalo en ambos lugares.
+Apps Script llama al backend servidor a servidor, por lo que CORS no se
+requiere. Usa solo datos ficticios o anonimizados en las pruebas.
+
+Este túnel es temporal. Si ngrok cambia la URL, actualiza BACKEND_URL. Cuando
+se cierre ngrok o el backend local, el formulario dejará de llegar al servicio.

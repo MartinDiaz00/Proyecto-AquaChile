@@ -1,16 +1,19 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+const path = require("node:path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 const solicitudesRouter = require("./routes/solicitudes");
 const evaluacionesRouter = require("./routes/evaluaciones");
 const authRouter = require("./routes/auth");
 const candidatosRouter = require("./routes/candidatos");
 const archivosRouter = require("./routes/archivos");
+const googleFormRouter = require("./routes/googleForm");
 
 const app = express();
 
 app.use(cors());
+app.use("/api/google-form", googleFormRouter);
 app.use(express.json());
 
 // Rutas de la API
@@ -33,7 +36,10 @@ app.use("/api", (_req, res) => {
 app.use((err, _req, res, _next) => {
   console.error("Error no controlado:", err);
   if (err.type === "entity.too.large") {
-    return res.status(413).json({ error: "El archivo supera el tamaño máximo permitido." });
+    return res.status(413).json({ error: "La solicitud supera el tamaño máximo permitido." });
+  }
+  if (err.type === "entity.parse.failed") {
+    return res.status(400).json({ error: "El cuerpo de la solicitud no es JSON válido." });
   }
   res.status(500).json({ error: "Error interno del servidor." });
 });

@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { TextoSano } from "../components/TextoSano";
 import { apiFetch } from "../services/api";
+import { FAMILIAS_CARGO, filtrarCandidatos, validarFormularioCandidato } from "../utils/validaciones";
 import * as XLSX from "xlsx";
 
 function Candidatos() {
@@ -50,29 +51,14 @@ function Candidatos() {
     return () => { vigente = false; };
   }, [permisos.candidatos, mostrarToast]);
 
-  const familiasCargo = ["Profesional A", "Profesional B", "Operario Calificado", "Supervisor B", "Jefatura"];
-
   const manejarCambio = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const validar = () => {
-    const nuevosErrores = {};
-    if (!form.nombre.trim()) nuevosErrores.nombre = "El nombre es obligatorio";
-    if (!form.correo.trim()) {
-      nuevosErrores.correo = "El correo es obligatorio";
-    } else if (!/\S+@\S+\.\S+/.test(form.correo)) {
-      nuevosErrores.correo = "El correo no tiene un formato válido";
-    }
-    if (!form.cargoPostulado.trim()) nuevosErrores.cargoPostulado = "El cargo es obligatorio";
-    if (!form.familiaCargo) nuevosErrores.familiaCargo = "Selecciona una familia de cargo";
-    return nuevosErrores;
   };
 
   const manejarEnvio = async (e) => {
     e.preventDefault();
 
-    const nuevosErrores = validar();
+    const nuevosErrores = validarFormularioCandidato(form);
     if (Object.keys(nuevosErrores).length > 0) {
       setErrores(nuevosErrores);
       return;
@@ -273,14 +259,7 @@ function Candidatos() {
     }
   };
 
-  const candidatosFiltrados = candidatos.filter((c) => {
-    const texto = busqueda.toLowerCase();
-    return (
-      c.nombre.toLowerCase().includes(texto) ||
-      (c.correo || "").toLowerCase().includes(texto) ||
-      (c.cargoPostulado || "").toLowerCase().includes(texto)
-    );
-  });
+  const candidatosFiltrados = filtrarCandidatos(candidatos, busqueda);
 
   return (
     <div className="container mt-4">
@@ -386,7 +365,7 @@ function Candidatos() {
                   onChange={manejarCambio}
                 >
                   <option value="">Selecciona una opción</option>
-                  {familiasCargo.map((f) => (
+                  {FAMILIAS_CARGO.map((f) => (
                     <option key={f} value={f}>{f}</option>
                   ))}
                 </select>

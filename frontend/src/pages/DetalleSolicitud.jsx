@@ -4,6 +4,7 @@ import { useData } from "../context/DataContext";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import { TextoSano } from "../components/TextoSano";
+import { validarFormularioEvaluacion } from "../utils/validaciones";
 
 function DetalleSolicitud() {
   const { id } = useParams();
@@ -74,16 +75,9 @@ function DetalleSolicitud() {
     setGuardadoOk(false);
   };
 
-  const validar = () => {
-    const nuevosErrores = {};
-    if (!form.fechaEvaluacion) nuevosErrores.fechaEvaluacion = "La fecha es obligatoria";
-    if (!form.resultado) nuevosErrores.resultado = "Selecciona un resultado";
-    return nuevosErrores;
-  };
-
   const manejarEnvio = async (e) => {
     e.preventDefault();
-    const nuevosErrores = validar();
+    const nuevosErrores = validarFormularioEvaluacion(form);
     if (Object.keys(nuevosErrores).length > 0) {
       setErrores(nuevosErrores);
       return;

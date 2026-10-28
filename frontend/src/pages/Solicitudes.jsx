@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { apiFetch } from "../services/api";
 import { TextoSano } from "../components/TextoSano";
+import { filtrarSolicitudes } from "../utils/validaciones";
 import * as XLSX from "xlsx";
 
 function Solicitudes() {
@@ -34,11 +35,16 @@ function Solicitudes() {
     setFiltroFecha("");
   };
 
-  const solicitudesFiltradas = solicitudes
-    .filter((s) => filtroEstado === "Todos" || s.estado === filtroEstado)
-    .filter((s) => s.cargo.toLowerCase().includes(filtroCargo.toLowerCase()))
-    .filter((s) => nombreCandidato(s.candidatoId).toLowerCase().includes(filtroCandidato.toLowerCase()))
-    .filter((s) => !filtroFecha || s.fechaSolicitud === filtroFecha);
+  const solicitudesFiltradas = filtrarSolicitudes(
+    solicitudes,
+    {
+      estado: filtroEstado,
+      cargo: filtroCargo,
+      candidato: filtroCandidato,
+      fecha: filtroFecha,
+    },
+    nombreCandidato
+  );
 
   const crearLibroExcel = () => {
     const COLOR_TITULO = "081B2E";    // azul profundo marca AquaChile

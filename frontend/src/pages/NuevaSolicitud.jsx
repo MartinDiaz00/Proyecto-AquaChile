@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { useToast } from "../context/ToastContext";
+import { validarFormularioSolicitud } from "../utils/validaciones";
 
 function NuevaSolicitud() {
   const { candidatos, agregarSolicitud, guardando } = useData();
@@ -41,21 +42,9 @@ function NuevaSolicitud() {
     setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   };
 
-  const validar = () => {
-    const nuevosErrores = {};
-    if (!form.candidatoId) nuevosErrores.candidatoId = "Selecciona un candidato";
-    if (!form.origenCandidato) nuevosErrores.origenCandidato = "Indica si es externo o interno";
-    if (!form.cargo.trim()) nuevosErrores.cargo = "El cargo es obligatorio";
-    if (!form.familiaCargo.trim()) nuevosErrores.familiaCargo = "La familia de cargo es obligatoria";
-    if (!form.fechaSolicitud) nuevosErrores.fechaSolicitud = "La fecha es obligatoria";
-    else if (form.fechaSolicitud < hoy) nuevosErrores.fechaSolicitud = "La fecha no puede ser anterior a hoy";
-    if (!form.responsable.trim()) nuevosErrores.responsable = "El responsable es obligatorio";
-    return nuevosErrores;
-  };
-
   const manejarEnvio = async (e) => {
     e.preventDefault();
-    const nuevosErrores = validar();
+    const nuevosErrores = validarFormularioSolicitud(form, hoy);
     if (Object.keys(nuevosErrores).length > 0) {
       setErrores(nuevosErrores);
       return;
